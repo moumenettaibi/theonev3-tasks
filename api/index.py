@@ -4,7 +4,7 @@ from flask import Flask, render_template
 
 # This part is the same
 # New, more robust line
-app = Flask(__name__, template_folder='../templates')
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 @app.route('/')
 def home():
     """
