@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimalist To-Do List</title>
+
+    <!--
+    FAVICON:
+    The favicon is added below as a "data URI", which is self-contained and doesn't require a separate file.
+    It's a simple black circle with a white checkmark.
+
+    If you prefer to use a file (e.g., "favicon.ico") in your Flask app, you would:
+    1. Place the "favicon.ico" file inside a "static" folder in your project's root directory.
+    2. Replace the <link> tag below with this line in your Jinja2 template:
+       <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
     <!-- Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
