@@ -4,4 +4,3 @@ Flask-SocketIO
 werkzeug
 psycopg2-binary
 python-dotenv
-apscheduler
