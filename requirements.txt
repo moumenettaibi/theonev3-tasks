@@ -2,5 +2,5 @@ Flask
 Flask-Login
 Flask-SocketIO
 werkzeug
-psycopg2-binarys
+psycopg2-binary
 python-dotenv
