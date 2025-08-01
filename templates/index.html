@@ -29,7 +29,7 @@
             --shadow-heavy: 0 8px 25px rgba(0, 0, 0, 0.1);
             --transition-fast: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-
+    
         /* --- General Resets & Body --- */
         * {
             margin: 0;
@@ -39,27 +39,27 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
-
+    
         body {
             background: var(--bg-color);
             color: var(--primary-text-color);
             min-height: 100vh;
-            padding: 2rem;
+            padding: 1rem; /* Reduced padding for small screens */
             display: flex;
             justify-content: center;
         }
-
+    
         /* --- Main Layout & Header --- */
         .container {
             max-width: 650px;
             width: 100%;
         }
-
+    
         header {
             text-align: center;
             margin-bottom: 2.5rem;
         }
-
+    
         .header-top h1 {
             font-size: 2.25rem;
             font-weight: 700;
@@ -71,11 +71,11 @@
             border-radius: var(--border-radius-md);
             transition: var(--transition-fast);
         }
-
+    
         .header-top h1:hover {
             background-color: var(--border-color);
         }
-
+    
         .date-nav {
             display: flex;
             align-items: center;
@@ -83,7 +83,7 @@
             gap: 1rem;
             margin-top: 1rem;
         }
-
+    
         .nav-arrow {
             font-size: 2rem;
             font-weight: 300;
@@ -94,17 +94,17 @@
             transition: var(--transition-fast);
             user-select: none;
         }
-
+    
         .nav-arrow:hover {
             background-color: var(--border-color);
             color: var(--primary-text-color);
         }
-
+    
         header .date {
             font-size: 1.1rem;
             font-weight: 500;
             color: var(--secondary-text-color);
-            min-width: 250px;
+            min-width: 210px; /* Adjusted for smaller screens */
             text-align: center;
             cursor: pointer;
             padding: 0.5rem 0.75rem;
@@ -112,20 +112,15 @@
             transition: var(--transition-fast);
             user-select: none;
         }
-
+    
         header .date:hover {
             background-color: var(--border-color);
             color: var(--primary-text-color);
         }
-
+    
         /* --- Analytics & Data Cards --- */
-        .analytics-container {
-            padding-top: 1rem;
-        }
-
-        .chart-container,
-        .stat-card,
-        .data-management-card {
+        .analytics-container { padding-top: 1rem; }
+        .chart-container, .stat-card, .data-management-card {
             background: var(--card-bg-color);
             padding: 1.5rem;
             border-radius: var(--border-radius-lg);
@@ -133,9 +128,7 @@
             box-shadow: var(--shadow-light);
             margin-bottom: 1.5rem;
         }
-
-        .chart-container h2,
-        .data-management-card h2 {
+        .chart-container h2, .data-management-card h2 {
             text-align: center;
             font-size: 1rem;
             font-weight: 600;
@@ -144,85 +137,69 @@
             margin-bottom: 1.5rem;
             color: var(--secondary-text-color);
         }
-
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Adjusted for better fit */
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
-
         .stat-card .value {
             font-size: 2.75rem;
             font-weight: 700;
             color: var(--primary-text-color);
         }
-
         .stat-card .label {
             font-size: 0.9rem;
             color: var(--secondary-text-color);
             margin-top: 0.25rem;
         }
-        
         .welcome-message {
             text-align: center;
             font-size: 0.9rem;
             color: var(--secondary-text-color);
             margin-bottom: 1.5rem;
         }
-
         .data-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
             justify-content: center;
         }
-
-        /* --- BUTTON STYLING (HARD FIX) --- */
-        
-        /* Base styles for all buttons in these containers */
-        .data-actions button,
-        .modal-actions button {
-            padding: 0.75rem 1.5rem;
+    
+        /* --- BUTTON STYLING --- */
+        .data-actions button, .modal-actions button {
+            padding: 0.8rem 1rem; /* Adjusted padding */
             border: 1px solid var(--border-color);
-            background-color: transparent; /* Default is transparent */
+            background-color: transparent;
             color: var(--primary-text-color);
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem; /* Slightly larger font */
             border-radius: var(--border-radius-md);
             font-weight: 600;
             transition: var(--transition-fast);
+            text-align: center;
         }
-
-        /* Hover for NON-danger buttons */
-        .data-actions button:not(.btn-danger):hover,
-        .modal-actions button:not(.btn-danger):hover {
+        .data-actions button:not(.btn-danger):hover, .modal-actions button:not(.btn-danger):hover {
             background-color: var(--accent-color);
             color: var(--accent-color-inverted);
             border-color: var(--accent-color);
         }
-
-        /* DEFAULT state for danger buttons (OVERRIDE) */
-        .data-actions .btn-danger,
-        .modal-actions .btn-danger {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-            color: var(--danger-text-color);
+        .btn-danger {
+            background-color: var(--danger-color) !important;
+            border-color: var(--danger-color) !important;
+            color: var(--danger-text-color) !important;
         }
-
-        /* HOVER state for danger buttons (OVERRIDE) */
-        .data-actions .btn-danger:hover,
-        .modal-actions .btn-danger:hover {
-            background-color: var(--danger-hover-bg);
-            border-color: var(--danger-hover-bg);
-            color: var(--danger-text-color);
+        .btn-danger:hover {
+            background-color: var(--danger-hover-bg) !important;
+            border-color: var(--danger-hover-bg) !important;
+            color: var(--danger-text-color) !important;
         }
-
+    
         /* --- FLOATING ACTION BUTTON --- */
         .add-task-btn {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
+            bottom: 1.5rem;
+            right: 1.5rem;
             width: 60px;
             height: 60px;
             background: var(--accent-color);
@@ -239,12 +216,11 @@
             z-index: 999;
             border: none;
         }
-
         .add-task-btn:hover {
             transform: scale(1.08);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
-
+    
         /* --- Modal & Forms --- */
         .modal {
             display: none;
@@ -258,23 +234,20 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            padding: 1rem;
         }
-
         .modal-content {
             background: var(--bg-color);
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: var(--border-radius-lg);
-            width: 90%;
+            width: 100%;
             max-width: 450px;
-            max-height: 85vh;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: var(--shadow-heavy);
             border: 1px solid var(--border-color);
         }
-
-        .modal-content input[type="text"],
-        .modal-content input[type="number"],
-        .modal-content select {
+        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content select {
             width: 100%;
             padding: 0.85rem 1rem;
             margin-bottom: 1rem;
@@ -287,27 +260,19 @@
             appearance: none;
             color: var(--primary-text-color);
         }
-
-        .modal-content input::placeholder {
-            color: var(--secondary-text-color);
-            opacity: 0.7;
-        }
-
-        .modal-content input[type="text"]:focus,
-        .modal-content input[type="number"]:focus,
-        .modal-content select:focus {
+        .modal-content input::placeholder { color: var(--secondary-text-color); opacity: 0.7; }
+        .modal-content input[type="text"]:focus, .modal-content input[type="number"]:focus, .modal-content select:focus {
             border-color: var(--accent-color);
             outline: none;
             box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
         }
-
+    
         .days-selection {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns for a cleaner look on mobile */
+            gap: 0.5rem;
             margin-bottom: 1.5rem;
         }
-
         .day-btn {
             padding: 0.75rem 0.25rem;
             border: 1px solid var(--border-color);
@@ -320,33 +285,26 @@
             transition: var(--transition-fast);
             color: var(--secondary-text-color);
         }
-
         .day-btn.selected {
             background: var(--accent-color);
             color: var(--accent-color-inverted);
             border-color: var(--accent-color);
         }
-
+    
+        /* --- *** HARD FIX for Modal Button Layout & Sizing *** --- */
         .modal-actions {
             display: flex;
             gap: 0.75rem;
-            justify-content: flex-end;
-            flex-wrap: wrap;
             margin-top: 1.5rem;
         }
-
-        #deleteGroupModalText {
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-            color: var(--secondary-text-color);
+        
+        .modal-actions button {
+            flex: 1; /* This makes all buttons in the container grow to an equal width */
+            white-space: nowrap; /* Prevents text like "Delete Task" from wrapping */
         }
-
+        
         /* --- Task List --- */
-        .task-list {
-            list-style: none;
-        }
-
+        .task-list { list-style: none; }
         .group-header {
             font-size: 0.9rem;
             font-weight: 600;
@@ -357,11 +315,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        .group-header.deletable:hover {
-            color: var(--primary-text-color);
-        }
-
+        .group-header.deletable:hover { color: var(--primary-text-color); }
         .task-item {
             display: flex;
             align-items: center;
@@ -371,17 +325,12 @@
             cursor: pointer;
             transition: background-color 0.15s ease-in-out;
         }
-
-        .task-item:hover {
-            background: rgba(0,0,0,0.02);
-        }
-
+        .task-item:hover { background: rgba(0,0,0,0.02); }
         .task-item.completed .task-text {
             text-decoration: line-through;
             color: var(--secondary-text-color);
             opacity: 0.8;
         }
-
         .task-checkbox {
             width: 22px;
             height: 22px;
@@ -395,16 +344,11 @@
             flex-shrink: 0;
             background: transparent;
         }
-
-        .task-checkbox:hover {
-             border-color: var(--primary-text-color);
-        }
-
+        .task-checkbox:hover { border-color: var(--primary-text-color); }
         .task-checkbox:checked {
             background: var(--accent-color);
             border-color: var(--accent-color);
         }
-
         .task-checkbox:checked::before {
             content: '✓';
             font-size: 14px;
@@ -414,7 +358,6 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
-
         .task-text {
             flex-grow: 1;
             font-size: 1rem;
@@ -423,15 +366,9 @@
             margin-right: 0.5rem;
             transition: color 0.2s ease;
         }
-
+    
         /* --- Habit Tracker Tags --- */
-        .task-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-shrink: 0;
-        }
-
+        .task-meta { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
         .habit-tracker, .habit-formed {
             font-size: 0.75rem;
             background-color: var(--border-color);
@@ -443,12 +380,7 @@
             user-select: none;
             transition: var(--transition-fast);
         }
-
-        .habit-tracker:hover {
-            background-color: #E0E0E0;
-            color: var(--primary-text-color);
-        }
-
+        .habit-tracker:hover { background-color: #E0E0E0; color: var(--primary-text-color); }
         .habit-formed {
             background-color: #DDEEDD;
             color: #3B7C3B;
@@ -456,7 +388,7 @@
     </style>
 </head>
 <body>
-    <!-- CORRECTED: The data-tasks attribute now correctly gets the JSON from the server -->
+    <!-- Data div for initial tasks -->
     <div id="initial-data" data-tasks='{{ initial_tasks | tojson }}' style="display: none;"></div>
 
     <div class="container">
@@ -484,7 +416,10 @@
         </div>
     </div>
 
+    <!-- Floating Action Button -->
     <div class="add-task-btn" id="addTaskBtn">+</div>
+
+    <!-- Modals and Inputs -->
     <input type="file" id="importFileInput" style="display: none;" accept="application/json">
     <div class="modal" id="taskModal"><div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name" style="display: none;"><div class="days-selection" id="daysSelection"><button class="day-btn" data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div><div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div></div></div>
     <div class="modal" id="deleteGroupModal"><div class="modal-content"><p id="deleteGroupModalText"></p><div class="modal-actions"><button id="cancelDeleteGroupBtn">Cancel</button><button id="confirmDeleteGroupBtn" class="btn-danger">Confirm Delete</button></div></div></div>
