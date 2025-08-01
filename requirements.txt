@@ -1,1 +1,6 @@
 Flask
+Flask-Login
+Flask-SocketIO
+werkzeug
+psycopg2-binarys
+python-dotenv
