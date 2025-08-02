@@ -465,7 +465,8 @@
                 const groupHeader = document.createElement('li');
                 groupHeader.className = 'group-header';
                 groupHeader.textContent = group;
-                if (group !== 'Ungrouped' && group !== 'App Features' && group !== 'Welcome') {
+                // --- MODIFIED --- Make all groups except 'Ungrouped' deletable
+                if (group !== 'Ungrouped') {
                     groupHeader.classList.add('deletable');
                     groupHeader.dataset.group = group;
                 }
@@ -508,10 +509,19 @@
 
         function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; if(task.completedOn[dateString] === undefined) { task.completedOn[dateString] = true; } else { task.completedOn[dateString] = !task.completedOn[dateString]; } if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const count = task.habitTracker.completedDates.length; const currentGoal = task.habitTracker.goal; if (isCompletedNow && count === currentGoal) { if (currentGoal === 21) task.habitTracker.goal = 45; else if (currentGoal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
         function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
-        function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(task => task.group).filter(g => g && g !== 'App Features' && g !== 'Welcome'))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
+        function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(task => task.group).filter(g => g))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
         function openTaskModal() { taskModal.style.display = 'flex'; taskInput.focus(); populateGroupDropdown(); }
         function closeTaskModal() { taskModal.style.display = 'none'; taskInput.value = ''; editingTaskId = null; deleteBtn.style.display = 'none'; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); newGroupInput.style.display = 'none'; newGroupInput.value = ''; groupSelect.value = ''; }
-        function openEditModal(task) { editingTaskId = task.id; taskInput.value = task.text; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day))); deleteBtn.style.display = 'inline-block'; openTaskModal(); groupSelect.value = task.group || ''; if(task.group === 'App Features' || task.group === 'Welcome') { deleteBtn.style.display = 'none'; } }
+        
+        function openEditModal(task) {
+            editingTaskId = task.id;
+            taskInput.value = task.text;
+            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day)));
+            deleteBtn.style.display = 'inline-block'; // --- MODIFIED --- Always show the delete button
+            openTaskModal();
+            groupSelect.value = task.group || '';
+        }
+
         function openHabitGoalModal(taskId) { editingHabitTaskId = taskId; const task = tasks.find(t => t.id === taskId); if (!task) return; habitGoalInput.value = task.habitTracker.goal; habitInfoText.textContent = `Current progress for "${task.text}" is ${task.habitTracker.completedDates.length} days.`; habitGoalModal.style.display = 'flex'; habitGoalInput.focus(); }
         function closeHabitGoalModal() { habitGoalModal.style.display = 'none'; habitGoalInput.value = ''; editingHabitTaskId = null; }
         function saveHabitGoal() { const task = tasks.find(t => t.id === editingHabitTaskId); if (!task) return; const newGoal = parseInt(habitGoalInput.value, 10); const currentCount = task.habitTracker.completedDates.length; if (isNaN(newGoal) || newGoal <= 0) { alert("Please enter a valid positive number for the goal."); return; } if (newGoal < currentCount) { alert(`The new goal must be >= your current progress of ${currentCount} days.`); return; } task.habitTracker.goal = newGoal; syncTasksToServer(); closeHabitGoalModal(); updateView(); }

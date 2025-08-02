@@ -157,8 +157,13 @@ def register():
             )
             
             default_tasks = [
-                {"id": str(uuid.uuid4()), "text": "Click 'Tasks' title for analytics", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Changes on this device will instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}}
+                {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
+                {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}}
             ]
             
             if default_tasks:
@@ -193,10 +198,7 @@ def logout():
 @app.route('/')
 @login_required
 def home():
-    # --- CORRECTED ---
-    # 1. Read the user's tasks from the database (returns a Python list of dicts).
     tasks_data = read_user_tasks()
-    # 2. Pass the raw Python object to the template. The template will handle the conversion to JSON.
     return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
@@ -230,4 +232,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5001, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=5002, allow_unsafe_werkzeug=True)
