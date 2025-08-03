@@ -358,6 +358,52 @@
             border: 1px solid var(--border-color);
         }
 
+        /* --- Mobile Keyboard Responsive Modals --- */
+        @media (max-width: 768px) {
+            .modal {
+                align-items: flex-start;
+                padding: 1rem 1rem 0 1rem;
+                /* Remove bottom padding to allow more space */
+            }
+
+            .modal-content {
+                margin-top: 10vh;
+                /* Start modal higher up on mobile */
+                max-height: 80vh;
+                /* Reduce max height to leave space for keyboard */
+                min-height: auto;
+                /* Allow modal to shrink */
+            }
+
+            /* When keyboard is likely visible (viewport height is very small) */
+            @media (max-height: 500px) {
+                .modal {
+                    align-items: flex-start;
+                    padding: 0.5rem 1rem 0 1rem;
+                }
+
+                .modal-content {
+                    margin-top: 2vh;
+                    /* Move modal to very top when keyboard is visible */
+                    max-height: 95vh;
+                    /* Use almost full available height */
+                    padding: 1rem;
+                    /* Reduce padding to save space */
+                }
+            }
+
+            /* For very small screens (keyboard definitely visible) */
+            @media (max-height: 400px) {
+                .modal-content {
+                    margin-top: 1vh;
+                    max-height: 98vh;
+                    padding: 0.75rem;
+                    border-radius: 8px;
+                    /* Smaller border radius to save space */
+                }
+            }
+        }
+
         .modal-content input[type="text"],
         .modal-content input[type="number"],
         .modal-content select {
