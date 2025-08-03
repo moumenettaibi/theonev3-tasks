@@ -362,12 +362,12 @@
         @media (max-width: 768px) {
             .modal {
                 align-items: flex-start;
-                padding: 1rem 1rem 0 1rem;
+                padding: 0.5rem 1rem 0 1rem;
                 /* Remove bottom padding to allow more space */
             }
 
             .modal-content {
-                margin-top: 10vh;
+                margin-top: 8vh;
                 /* Start modal higher up on mobile */
                 max-height: 80vh;
                 /* Reduce max height to leave space for keyboard */
@@ -379,11 +379,11 @@
             @media (max-height: 500px) {
                 .modal {
                     align-items: flex-start;
-                    padding: 0.5rem 1rem 0 1rem;
+                    padding: 0.25rem 1rem 0 1rem;
                 }
 
                 .modal-content {
-                    margin-top: 2vh;
+                    margin-top: 1vh;
                     /* Move modal to very top when keyboard is visible */
                     max-height: 95vh;
                     /* Use almost full available height */
@@ -395,7 +395,7 @@
             /* For very small screens (keyboard definitely visible) */
             @media (max-height: 400px) {
                 .modal-content {
-                    margin-top: 1vh;
+                    margin-top: 0.5vh;
                     max-height: 98vh;
                     padding: 0.75rem;
                     border-radius: 8px;
