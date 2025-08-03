@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,11 +27,16 @@
             --missed-task-color: #E57373;
             /* --- NEW: PROGRESS BAR STEP COLORS --- */
             --progress-bar-bg: #EEEEEE;
-            --progress-red: #E57373;      /* For 1-24% */
-            --progress-orange: #FFB74D;   /* For 25-49% */
-            --progress-yellow: #FFD54F;   /* For 50-74% */
-            --progress-light-green: #AED581; /* For 75-99% */
-            --progress-green: #81C784;     /* For 100% */
+            --progress-red: #E57373;
+            /* For 1-24% */
+            --progress-orange: #FFB74D;
+            /* For 25-49% */
+            --progress-yellow: #FFD54F;
+            /* For 50-74% */
+            --progress-light-green: #AED581;
+            /* For 75-99% */
+            --progress-green: #81C784;
+            /* For 100% */
             --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             --border-radius-md: 10px;
             --border-radius-lg: 16px;
@@ -129,197 +135,474 @@
 
         /* --- UPDATED: Responsive Daily Progress Bar --- */
 
-/* Base styles for desktop and larger screens */
-.progress-container {
-    width: 100%;
-    max-width: 400px; 
-    height: 25px; /* Your desired larger height for desktop */
-    background-color: var(--progress-bar-bg);
-    border-radius: var(--border-radius-md);
-    margin: 1.5rem auto; /* Centers the progress bar */
-    overflow: hidden;
-    position: relative;
-}
+        /* Base styles for desktop and larger screens */
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            height: 25px;
+            /* Your desired larger height for desktop */
+            background-color: var(--progress-bar-bg);
+            border-radius: var(--border-radius-md);
+            margin: 1.5rem auto;
+            /* Centers the progress bar */
+            overflow: hidden;
+            position: relative;
+        }
 
-.progress-bar-inner {
-    height: 100%;
-    width: 0;
-    border-radius: var(--border-radius-md);
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
-    background-color: var(--progress-red); /* Default starting color */
-}
+        .progress-bar-inner {
+            height: 100%;
+            width: 0;
+            border-radius: var(--border-radius-md);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+            background-color: var(--progress-red);
+            /* Default starting color */
+        }
 
-/* New classes for stepped colors */
-.progress-bar-inner.color-red { background-color: var(--progress-red); }
-.progress-bar-inner.color-orange { background-color: var(--progress-orange); }
-.progress-bar-inner.color-yellow { background-color: var(--progress-yellow); }
-.progress-bar-inner.color-light-green { background-color: var(--progress-light-green); }
-.progress-bar-inner.color-green { background-color: var(--progress-green); }
+        /* New classes for stepped colors */
+        .progress-bar-inner.color-red {
+            background-color: var(--progress-red);
+        }
 
-.progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 0.8rem; /* Larger text for the desktop bar */
-    font-weight: 700;
-    color: var(--primary-text-color);
-    opacity: 0.85;
-    user-select: none;
-}
+        .progress-bar-inner.color-orange {
+            background-color: var(--progress-orange);
+        }
+
+        .progress-bar-inner.color-yellow {
+            background-color: var(--progress-yellow);
+        }
+
+        .progress-bar-inner.color-light-green {
+            background-color: var(--progress-light-green);
+        }
+
+        .progress-bar-inner.color-green {
+            background-color: var(--progress-green);
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8rem;
+            /* Larger text for the desktop bar */
+            font-weight: 700;
+            color: var(--primary-text-color);
+            opacity: 0.85;
+            user-select: none;
+        }
 
 
-/* --- Styles for Mobile Phones --- */
-/* This code applies ONLY when the screen is 600px wide or less */
-@media (max-width: 600px) {
-    .progress-container {
-        width: 95%; /* On mobile, use 95% width so it doesn't touch the edges */
-        height: 22px; /* Make it slightly thinner on smaller screens for better balance */
-    }
+        /* --- Styles for Mobile Phones --- */
+        /* This code applies ONLY when the screen is 600px wide or less */
+        @media (max-width: 600px) {
+            .progress-container {
+                width: 95%;
+                /* On mobile, use 95% width so it doesn't touch the edges */
+                height: 22px;
+                /* Make it slightly thinner on smaller screens for better balance */
+            }
 
-    .progress-text {
-        font-size: 0.75rem; /* Adjust the text size to fit the smaller bar */
-    }
-}
+            .progress-text {
+                font-size: 0.75rem;
+                /* Adjust the text size to fit the smaller bar */
+            }
+        }
 
         /* --- Analytics & Data Cards --- */
-        .analytics-container { padding-top: 1rem; }
-        .chart-container, .stat-card, .data-management-card {
-            background: var(--card-bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-light); margin-bottom: 1.5rem;
+        .analytics-container {
+            padding-top: 1rem;
         }
-        .chart-container h2, .data-management-card h2 {
-            text-align: center; font-size: 1rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 1.5rem; color: var(--secondary-text-color);
+
+        .chart-container,
+        .stat-card,
+        .data-management-card {
+            background: var(--card-bg-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+            margin-bottom: 1.5rem;
         }
+
+        .chart-container h2,
+        .data-management-card h2 {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            color: var(--secondary-text-color);
+        }
+
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
+
         .stat-card .value {
-            font-size: 2.75rem; font-weight: 700; color: var(--primary-text-color);
+            font-size: 2.75rem;
+            font-weight: 700;
+            color: var(--primary-text-color);
         }
+
         .stat-card .label {
-            font-size: 0.9rem; color: var(--secondary-text-color); margin-top: 0.25rem;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            margin-top: 0.25rem;
         }
+
         .welcome-message {
-            text-align: center; font-size: 0.9rem; color: var(--secondary-text-color); margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            margin-bottom: 1.5rem;
         }
+
         .data-actions {
-            display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
         }
 
         /* --- BUTTON STYLING --- */
-        .data-actions button, .modal-actions button {
-            padding: 0.8rem 1rem; border: 1px solid var(--border-color); background-color: transparent; color: var(--primary-text-color); cursor: pointer; font-size: 0.9rem; border-radius: var(--border-radius-md); font-weight: 600; transition: var(--transition-fast); text-align: center;
+        .data-actions button,
+        .modal-actions button {
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            background-color: transparent;
+            color: var(--primary-text-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            transition: var(--transition-fast);
+            text-align: center;
         }
-        .data-actions button:not(.btn-danger):hover, .modal-actions button:not(.btn-danger):hover {
-            background-color: var(--accent-color); color: var(--accent-color-inverted); border-color: var(--accent-color);
+
+        .data-actions button:not(.btn-danger):hover,
+        .modal-actions button:not(.btn-danger):hover {
+            background-color: var(--accent-color);
+            color: var(--accent-color-inverted);
+            border-color: var(--accent-color);
         }
+
         .btn-danger {
-            background-color: var(--danger-color) !important; border-color: var(--danger-color) !important; color: var(--danger-text-color) !important;
+            background-color: var(--danger-color) !important;
+            border-color: var(--danger-color) !important;
+            color: var(--danger-text-color) !important;
         }
+
         .btn-danger:hover {
-            background-color: var(--danger-hover-bg) !important; border-color: var(--danger-hover-bg) !important; color: var(--danger-text-color) !important;
+            background-color: var(--danger-hover-bg) !important;
+            border-color: var(--danger-hover-bg) !important;
+            color: var(--danger-text-color) !important;
         }
 
         /* --- FLOATING ACTION BUTTON --- */
         .add-task-btn {
-            position: fixed; bottom: 1.5rem; right: 1.5rem; width: 60px; height: 60px; background: var(--accent-color); color: var(--accent-color-inverted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 300; cursor: pointer; transition: var(--transition-fast); box-shadow: var(--shadow-heavy); z-index: 999; border: none;
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 60px;
+            height: 60px;
+            background: var(--accent-color);
+            color: var(--accent-color-inverted);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            box-shadow: var(--shadow-heavy);
+            z-index: 999;
+            border: none;
         }
+
         .add-task-btn:hover {
-            transform: scale(1.08); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            transform: scale(1.08);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
 
         /* --- Modal & Forms --- */
         .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.3); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.3);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
         }
+
         .modal-content {
-            background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius-lg);
+            width: 100%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-heavy);
+            border: 1px solid var(--border-color);
         }
-        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content select {
-            width: 100%; padding: 0.85rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); font-size: 1rem; border-radius: var(--border-radius-md); transition: var(--transition-fast); background: var(--card-bg-color); -webkit-appearance: none; appearance: none; color: var(--primary-text-color);
+
+        .modal-content input[type="text"],
+        .modal-content input[type="number"],
+        .modal-content select {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            border-radius: var(--border-radius-md);
+            transition: var(--transition-fast);
+            background: var(--card-bg-color);
+            -webkit-appearance: none;
+            appearance: none;
+            color: var(--primary-text-color);
         }
-        .modal-content input::placeholder { color: var(--secondary-text-color); opacity: 0.7; }
-        .modal-content input[type="text"]:focus, .modal-content input[type="number"]:focus, .modal-content select:focus {
-            border-color: var(--accent-color); outline: none; box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+
+        .modal-content input::placeholder {
+            color: var(--secondary-text-color);
+            opacity: 0.7;
+        }
+
+        .modal-content input[type="text"]:focus,
+        .modal-content input[type="number"]:focus,
+        .modal-content select:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
         }
 
         .days-selection {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
         }
+
         .day-btn {
-            padding: 0.75rem 0.25rem; border: 1px solid var(--border-color); background: var(--card-bg-color); cursor: pointer; text-align: center; font-size: 0.85rem; font-weight: 500; border-radius: var(--border-radius-md); transition: var(--transition-fast); color: var(--secondary-text-color);
+            padding: 0.75rem 0.25rem;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg-color);
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: var(--border-radius-md);
+            transition: var(--transition-fast);
+            color: var(--secondary-text-color);
         }
+
         .day-btn.selected {
-            background: var(--accent-color); color: var(--accent-color-inverted); border-color: var(--accent-color);
+            background: var(--accent-color);
+            color: var(--accent-color-inverted);
+            border-color: var(--accent-color);
         }
 
         /* --- *** HARD FIX for Modal Button Layout & Sizing *** --- */
         .modal-actions {
-            display: flex; gap: 0.75rem; margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
         }
-        
+
         .modal-actions button {
-            flex: 1; white-space: nowrap;
+            flex: 1;
+            white-space: nowrap;
         }
-        
+
         /* --- Task List --- */
-        .task-list { list-style: none; }
+        .task-list {
+            list-style: none;
+        }
+
         .group-header {
-            font-size: 0.9rem; font-weight: 600; padding: 1.5rem 0 0.75rem 0; margin-top: 1rem; border-bottom: 1px solid var(--border-color); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 1.5rem 0 0.75rem 0;
+            margin-top: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .group-header.deletable:hover { color: var(--primary-text-color); }
+
+        .group-header.deletable:hover {
+            color: var(--primary-text-color);
+        }
+
         .task-item {
-            display: flex; align-items: center; justify-content: space-between; padding: 1rem 0.5rem; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.15s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
         }
-        .task-item:hover { background: rgba(0,0,0,0.02); }
+
+        .task-item:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
         .task-item.completed .task-text {
-            text-decoration: line-through; color: var(--secondary-text-color); opacity: 0.8;
+            text-decoration: line-through;
+            color: var(--secondary-text-color);
+            opacity: 0.8;
         }
+
         .task-checkbox {
-            width: 22px; height: 22px; border: 2px solid var(--secondary-text-color); border-radius: 50%; position: relative; margin-right: 1rem; cursor: pointer; appearance: none; transition: var(--transition-fast); flex-shrink: 0; background: transparent;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--secondary-text-color);
+            border-radius: 50%;
+            position: relative;
+            margin-right: 1rem;
+            cursor: pointer;
+            appearance: none;
+            transition: var(--transition-fast);
+            flex-shrink: 0;
+            background: transparent;
         }
-        .task-checkbox:hover { border-color: var(--primary-text-color); }
+
+        .task-checkbox:hover {
+            border-color: var(--primary-text-color);
+        }
+
         .task-checkbox:checked {
-            background: var(--accent-color); border-color: var(--accent-color);
+            background: var(--accent-color);
+            border-color: var(--accent-color);
         }
+
         .task-checkbox:checked::before {
-            content: '✓'; font-size: 14px; color: var(--accent-color-inverted); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            content: '✓';
+            font-size: 14px;
+            color: var(--accent-color-inverted);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
+
         .task-text {
-            flex-grow: 1; font-size: 1rem; font-weight: 500; word-break: break-word; margin-right: 0.5rem; transition: color 0.2s ease;
+            flex-grow: 1;
+            font-size: 1rem;
+            font-weight: 500;
+            word-break: break-word;
+            margin-right: 0.5rem;
+            transition: color 0.2s ease;
         }
-    
+
         /* --- Smart highlight for missed tasks --- */
         .task-item.missed-yesterday .task-text {
-            color: var(--missed-task-color); font-weight: 600;
+            color: var(--missed-task-color);
+            font-weight: 600;
         }
+
         .task-item.missed-yesterday.completed .task-text {
-            color: var(--secondary-text-color); font-weight: 500;
+            color: var(--secondary-text-color);
+            font-weight: 500;
         }
 
         /* --- Habit Tracker Tags --- */
-        .task-meta { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-        .habit-tracker, .habit-formed {
-            font-size: 0.75rem; background-color: var(--border-color); color: var(--secondary-text-color); padding: 4px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; user-select: none; transition: var(--transition-fast);
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
         }
-        .habit-tracker:hover { background-color: #E0E0E0; color: var(--primary-text-color); }
-        .habit-formed {
-            background-color: #DDEEDD; color: #3B7C3B;
-        }
-        *:focus {
-    outline: none !important;
-    box-shadow: none !important; /* covers browsers that use shadow instead of outline */
-}
 
+        .habit-tracker,
+        .habit-formed {
+            font-size: 0.75rem;
+            background-color: var(--border-color);
+            color: var(--secondary-text-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition-fast);
+        }
+
+        .habit-tracker:hover {
+            background-color: #E0E0E0;
+            color: var(--primary-text-color);
+        }
+
+        .habit-formed {
+            background-color: #DDEEDD;
+            color: #3B7C3B;
+        }
+
+        /* Remove focus outlines on all elements */
+        *:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Target specific mobile browser focus states */
+        *:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove webkit tap highlight on mobile */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-focus-ring-color: transparent !important;
+        }
+
+        /* Target buttons, inputs, and interactive elements specifically */
+        button:focus,
+        input:focus,
+        select:focus,
+        textarea:focus,
+        a:focus,
+        div:focus,
+        span:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
+        /* Remove focus ring from custom elements */
+        .task-checkbox:focus,
+        .day-btn:focus,
+        .add-task-btn:focus,
+        .nav-arrow:focus,
+        .date:focus,
+        .header-top h1:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
     </style>
 </head>
+
 <body>
     <!-- Data div for initial tasks -->
     <div id="initial-data" data-tasks='{{ initial_tasks | tojson }}' style="display: none;"></div>
 
     <div class="container">
         <header>
-            <div class="header-top"><h1></h1></div>
+            <div class="header-top">
+                <h1></h1>
+            </div>
             <div class="date-nav">
                 <span class="nav-arrow" id="prevDayBtn">‹</span>
                 <div class="date" id="currentDate"></div>
@@ -334,16 +617,28 @@
         </div>
 
         <div id="tasksContainer">
-             <ul class="task-list" id="taskList"></ul>
+            <ul class="task-list" id="taskList"></ul>
         </div>
 
         <div id="analyticsContainer" style="display: none;">
-            <div class="stats-grid"><div class="stat-card"><div class="value" id="totalCompletedStat">0</div><div class="label">Total Tasks Completed</div></div><div class="stat-card"><div class="value" id="productiveDayStat">-</div><div class="label">Most Productive Day</div></div></div>
-            <div class="chart-container"><h2>Completion Trend (Last 14 Days)</h2><canvas id="completionTrendChart"></canvas></div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="totalCompletedStat">0</div>
+                    <div class="label">Total Tasks Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="productiveDayStat">-</div>
+                    <div class="label">Most Productive Day</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h2>Completion Trend (Last 14 Days)</h2><canvas id="completionTrendChart"></canvas>
+            </div>
             <div class="data-management-card">
                 <h2>Data & Account</h2>
                 <div class="welcome-message" id="welcomeMessage"></div>
-                <div class="data-actions"><button id="importBtn">Import Data</button><button id="exportBtn">Export Data</button><button id="logoutBtn" class="btn-danger">Logout</button></div>
+                <div class="data-actions"><button id="importBtn">Import Data</button><button id="exportBtn">Export
+                        Data</button><button id="logoutBtn" class="btn-danger">Logout</button></div>
             </div>
         </div>
     </div>
@@ -353,9 +648,37 @@
 
     <!-- Modals and Inputs -->
     <input type="file" id="importFileInput" style="display: none;" accept="application/json">
-    <div class="modal" id="taskModal"><div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name" style="display: none;"><div class="days-selection" id="daysSelection"><button class="day-btn" data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div><div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div></div></div>
-    <div class="modal" id="deleteGroupModal"><div class="modal-content"><p id="deleteGroupModalText"></p><div class="modal-actions"><button id="cancelDeleteGroupBtn">Cancel</button><button id="confirmDeleteGroupBtn" class="btn-danger">Confirm Delete</button></div></div></div>
-    <div class="modal" id="habitGoalModal"><div class="modal-content"><h3 style="font-weight: 600; margin-bottom: 0.75rem;">Set Habit Goal</h3><p id="habitInfoText" style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;"></p><label for="habitGoalInput" style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Goal (in days):</label><input type="number" id="habitGoalInput" placeholder="e.g., 21" min="1"><div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save Goal</button></div></div></div>
+    <div class="modal" id="taskModal">
+        <div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select
+                id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name"
+                style="display: none;">
+            <div class="days-selection" id="daysSelection"><button class="day-btn"
+                    data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button
+                    class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button
+                    class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button
+                    class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div>
+            <div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete
+                    Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div>
+        </div>
+    </div>
+    <div class="modal" id="deleteGroupModal">
+        <div class="modal-content">
+            <p id="deleteGroupModalText"></p>
+            <div class="modal-actions"><button id="cancelDeleteGroupBtn">Cancel</button><button
+                    id="confirmDeleteGroupBtn" class="btn-danger">Confirm Delete</button></div>
+        </div>
+    </div>
+    <div class="modal" id="habitGoalModal">
+        <div class="modal-content">
+            <h3 style="font-weight: 600; margin-bottom: 0.75rem;">Set Habit Goal</h3>
+            <p id="habitInfoText" style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;"></p><label
+                for="habitGoalInput"
+                style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Goal (in
+                days):</label><input type="number" id="habitGoalInput" placeholder="e.g., 21" min="1">
+            <div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save
+                    Goal</button></div>
+        </div>
+    </div>
 
     <script>
         // DOM Elements
@@ -370,7 +693,7 @@
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
-        
+
         socket.on('tasks_updated', (updatedTasks) => {
             console.log('Received real-time task update from server.');
             tasks = updatedTasks;
@@ -379,7 +702,7 @@
                 updateProgressBar();
             }
         });
-        
+
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
 
@@ -393,9 +716,9 @@
         function calculateCompletionTrend(numDays) { const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`; labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); tasks.forEach(task => { if (task.completedOn[dateString] === true) { data[numDays - 1 - i]++; } }); } return { labels, data }; }
         function renderLineChart(chartData) { const ctx = document.getElementById('completionTrendChart').getContext('2d'); if (completionTrendChart) completionTrendChart.destroy(); completionTrendChart = new Chart(ctx, { type: 'line', data: { labels: chartData.labels, datasets: [{ label: 'Tasks Completed', data: chartData.data, backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: '#000000', borderWidth: 2, tension: 0.1, fill: true }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
         function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); const today = new Date().toISOString().slice(0, 10); link.download = `tasks-backup-${today}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
-        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const importedData = JSON.parse(e.target.result); if (!isValidTaskData(importedData)) { throw new Error('Invalid or corrupted data file.'); } const isConfirmed = confirm('This will overwrite all your current tasks on the server. Are you sure?'); if (isConfirmed) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully and will be synced!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
+        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!isValidTaskData(importedData)) { throw new Error('Invalid or corrupted data file.'); } const isConfirmed = confirm('This will overwrite all your current tasks on the server. Are you sure?'); if (isConfirmed) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully and will be synced!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
         function isValidTaskData(data) { if (!Array.isArray(data)) return false; if (data.length > 0) { const firstItem = data[0]; return 'text' in firstItem && 'recurrence' in firstItem && 'completedOn' in firstItem; } return true; }
-        
+
         // --- CORE APP LOGIC ---
         function updateView() { const dateInfo = getDateInfo(currentDisplayDate); currentDateElement.textContent = dateInfo.formatted; renderTasks(); updateProgressBar(); }
         function getDateInfo(date) { const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']; const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const dayOfWeek = days[date.getDay()]; const day = date.getDate(); const month = months[date.getMonth()]; const year = date.getFullYear(); const today = new Date(); today.setHours(0, 0, 0, 0); const compareDate = new Date(date); compareDate.setHours(0, 0, 0, 0); const isToday = compareDate.getTime() === today.getTime(); let formattedDate = `${dayOfWeek}, ${month} ${day}`; if (!isToday) { formattedDate += `, ${year}`; } else { formattedDate += " (Today)"; } const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`; return { dayOfWeek, dateString, formatted: formattedDate, isToday }; }
@@ -413,7 +736,7 @@
             progressContainer.style.display = 'block';
             const completedTasks = tasksForDay.filter(task => task.completedOn[dateInfo.dateString] === true);
             const percentage = tasksForDay.length > 0 ? Math.round((completedTasks.length / tasksForDay.length) * 100) : 0;
-            
+
             // Update width and text
             progressBarInner.style.width = `${percentage}%`;
             progressText.textContent = `${percentage}% Complete`;
@@ -434,7 +757,7 @@
                 progressBarInner.classList.add('color-red');
             }
         }
-        
+
         function findMostRecentPreviousDueDate(task, currentDate) {
             let checkDate = new Date(currentDate);
             checkDate.setDate(checkDate.getDate() - 1);
@@ -446,7 +769,7 @@
             }
             return null;
         }
-        
+
         function renderTasks() {
             const dateInfo = getDateInfo(currentDisplayDate);
             const { dayOfWeek, dateString, isToday } = dateInfo;
@@ -484,7 +807,7 @@
                     if (isCompletedToday) li.classList.add('completed');
                     li.dataset.taskId = task.id;
 
-                    if (isToday && !isCompletedToday) { 
+                    if (isToday && !isCompletedToday) {
                         const previousDueDate = findMostRecentPreviousDueDate(task, currentDisplayDate);
                         if (previousDueDate) {
                             const { dateString: prevDateString } = getDateInfo(previousDueDate);
@@ -512,12 +835,12 @@
             });
         }
 
-        function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; if(task.completedOn[dateString] === undefined) { task.completedOn[dateString] = true; } else { task.completedOn[dateString] = !task.completedOn[dateString]; } if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const count = task.habitTracker.completedDates.length; const currentGoal = task.habitTracker.goal; if (isCompletedNow && count === currentGoal) { if (currentGoal === 21) task.habitTracker.goal = 45; else if (currentGoal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
+        function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; if (task.completedOn[dateString] === undefined) { task.completedOn[dateString] = true; } else { task.completedOn[dateString] = !task.completedOn[dateString]; } if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const count = task.habitTracker.completedDates.length; const currentGoal = task.habitTracker.goal; if (isCompletedNow && count === currentGoal) { if (currentGoal === 21) task.habitTracker.goal = 45; else if (currentGoal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
         function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
         function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(task => task.group).filter(g => g))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
         function openTaskModal() { taskModal.style.display = 'flex'; taskInput.focus(); populateGroupDropdown(); }
         function closeTaskModal() { taskModal.style.display = 'none'; taskInput.value = ''; editingTaskId = null; deleteBtn.style.display = 'none'; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); newGroupInput.style.display = 'none'; newGroupInput.value = ''; groupSelect.value = ''; }
-        
+
         function openEditModal(task) {
             editingTaskId = task.id;
             taskInput.value = task.text;
@@ -530,7 +853,7 @@
         function openHabitGoalModal(taskId) { editingHabitTaskId = taskId; const task = tasks.find(t => t.id === taskId); if (!task) return; habitGoalInput.value = task.habitTracker.goal; habitInfoText.textContent = `Current progress for "${task.text}" is ${task.habitTracker.completedDates.length} days.`; habitGoalModal.style.display = 'flex'; habitGoalInput.focus(); }
         function closeHabitGoalModal() { habitGoalModal.style.display = 'none'; habitGoalInput.value = ''; editingHabitTaskId = null; }
         function saveHabitGoal() { const task = tasks.find(t => t.id === editingHabitTaskId); if (!task) return; const newGoal = parseInt(habitGoalInput.value, 10); const currentCount = task.habitTracker.completedDates.length; if (isNaN(newGoal) || newGoal <= 0) { alert("Please enter a valid positive number for the goal."); return; } if (newGoal < currentCount) { alert(`The new goal must be >= your current progress of ${currentCount} days.`); return; } task.habitTracker.goal = newGoal; syncTasksToServer(); closeHabitGoalModal(); updateView(); }
-        function saveTask() { const text = taskInput.value.trim(); const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day); if (!text || selectedDays.length === 0) { alert('Task text and at least one day are required.'); return; } let group = null; if (groupSelect.value === '--add-new--') { group = newGroupInput.value.trim() || null; } else { group = groupSelect.value || null; } if (editingTaskId) { const task = tasks.find(t => t.id === editingTaskId); if(task) { task.text = text; task.group = group; task.recurrence = selectedDays; } } else { const newTask = { id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } }; tasks.push(newTask); } syncTasksToServer(); closeTaskModal(); updateView(); }
+        function saveTask() { const text = taskInput.value.trim(); const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day); if (!text || selectedDays.length === 0) { alert('Task text and at least one day are required.'); return; } let group = null; if (groupSelect.value === '--add-new--') { group = newGroupInput.value.trim() || null; } else { group = groupSelect.value || null; } if (editingTaskId) { const task = tasks.find(t => t.id === editingTaskId); if (task) { task.text = text; task.group = group; task.recurrence = selectedDays; } } else { const newTask = { id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } }; tasks.push(newTask); } syncTasksToServer(); closeTaskModal(); updateView(); }
         function deleteTask() { if (editingTaskId) { tasks = tasks.filter(t => t.id !== editingTaskId); syncTasksToServer(); closeTaskModal(); updateView(); } }
         function _deleteGroup(groupName) { tasks.forEach(task => { if (task.group === groupName) { task.group = null; } }); syncTasksToServer(); updateView(); }
         function openDeleteGroupModal(groupName) { groupToDelete = groupName; deleteGroupModalText.textContent = `Delete the "${groupName}" group? All tasks inside will be moved to Ungrouped.`; deleteGroupModal.style.display = 'flex'; }
@@ -544,4 +867,5 @@
         showTasksView();
     </script>
 </body>
+
 </html>
