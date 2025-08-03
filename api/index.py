@@ -8,8 +8,9 @@ import psycopg2
 import psycopg2.extras
 from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
+from datetime import timedelta  # --- MODIFIED: Imported timedelta
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,7 +20,21 @@ load_dotenv()
 
 # --- App & SocketIO Setup ---
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'a-strong-dev-secret-key')
+
+# --- MODIFIED: CRITICAL FOR PERSISTENT LOGINS ACROSS DEPLOYMENTS ---
+# You MUST set a strong, permanent secret key in your deployment environment (e.g., Vercel, Heroku).
+# If this key changes, all users will be logged out.
+SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
+if not SECRET_KEY:
+    print("WARNING: FLASK_SECRET_KEY environment variable not set. Using a weak, temporary key for development.")
+    print("         For production, you MUST set a persistent FLASK_SECRET_KEY.")
+    SECRET_KEY = 'a-strong-dev-secret-key-that-is-not-so-secret'
+app.secret_key = SECRET_KEY
+
+# --- MODIFIED: Set the session to last for one year ---
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
+
+
 socketio = SocketIO(app)
 
 # --- Database Connection Pool ---
@@ -130,6 +145,8 @@ def login_page():
         user = get_user_by_username(username)
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
+            # --- MODIFIED: Make the session permanent for the configured lifetime ---
+            session.permanent = True
             return jsonify({'success': True, 'message': 'Logged in successfully!'})
         return jsonify({'success': False, 'message': 'Invalid username or password.'}), 401
     return render_template('login.html')
@@ -186,6 +203,8 @@ def register():
     
     new_user = get_user_by_id(new_user_id)
     login_user(new_user)
+    # --- MODIFIED: Make the session permanent after registration too ---
+    session.permanent = True
     return jsonify({'success': True, 'message': 'Registration successful!'})
 
 @app.route('/logout', methods=['POST'])
