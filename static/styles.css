@@ -1,39 +1,47 @@
-/* --- CSS Custom Properties for an Old Paper Theme --- */
+/* --- CSS Custom Properties for an Enhanced Old Paper Theme --- */
+@import url('https://fonts.googleapis.com/css2?family=Marck+Script&family=Nothing+You+Could+Do&display=swap');
+
 :root {
-    --bg-color: #FDFBF5;
-    /* A creamy, parchment-like background */
-    --primary-text-color: #4B3F34;
-    /* Dark brown for text, like old ink */
-    --secondary-text-color: #796A5D;
-    /* A lighter, faded brown */
+    /* -- Color Palette: Weathered Parchment & Faded Ink -- */
+    --bg-color: #F8F2E8;
+    /* A more aged, fibrous parchment */
+    --primary-text-color: #41352D;
+    /* Rich, dark sepia ink */
+    --secondary-text-color: #8A796D;
+    /* Faded ink for less important text */
     --border-color: #D3C6B5;
-    /* A subtle, aged border color */
-    --card-bg-color: rgba(253, 251, 245, 0.8);
-    /* Slightly transparent to show texture */
+    /* Worn and soft border */
+    --card-bg-color: rgba(248, 242, 232, 0.75);
+    /* Translucent card, showing paper texture */
     --accent-color: #5D4037;
-    /* A deeper brown for accents */
-    --accent-color-inverted: #FDFBF5;
-    --danger-color: #8D2A2A;
-    /* A muted, blood-red for danger */
-    --danger-hover-bg: #7B2424;
-    --danger-text-color: #FDFBF5;
+    /* A deeper, more saturated brown for emphasis */
+    --accent-color-inverted: #F8F2E8;
+    --danger-color: #9A2C2C;
+    /* A deeper, dried blood red */
+    --danger-hover-bg: #7F2424;
+    --danger-text-color: #F8F2E8;
+    --water-stain-color: rgba(169, 140, 112, 0.07);
+    /* Subtle stain for backgrounds */
 
-    /* --- Progress Bar Colors --- */
-    --progress-bar-bg: rgba(121, 106, 93, 0.1);
-    --progress-fill: #5D4037;
+    /* -- Progress Bar & Interactive Colors -- */
+    --progress-bar-bg: rgba(121, 106, 93, 0.15);
+    --progress-fill: linear-gradient(90deg, #5D4037 0%, #41352D 100%);
+    --progress-text-on-fill: #EFE8DE;
+    /* Contrasting text for filled bar */
 
-
-    /* --- Font & Border Styles --- */
+    /* -- Font & Border Styles -- */
     --font-main: 'Nothing You Could Do', cursive;
-    /* The handwritten font */
-    --border-radius-md: 5px;
-    --border-radius-lg: 8px;
+    /* Your beloved handwritten font */
+    --font-heading: 'Marck Script', cursive;
+    /* A more elegant, script font for titles */
+    --border-radius-md: 4px;
+    --border-radius-lg: 6px;
 
-    /* --- Shadows & Textures --- */
-    --shadow-light: 3px 3px 5px rgba(0, 0, 0, 0.1);
-    --shadow-heavy: 5px 5px 10px rgba(0, 0, 0, 0.15);
-    --text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-    --transition-fast: all 0.2s ease-in-out;
+    /* -- Shadows & Textures -- */
+    --shadow-light: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-heavy: 4px 4px 12px rgba(0, 0, 0, 0.2);
+    --text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.15);
+    --transition-fast: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- General Resets & Body --- */
@@ -46,7 +54,7 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Old Paper Background Effect */
+/* Old Paper Background Effect with Vignette */
 body {
     background-color: var(--bg-color);
     color: var(--primary-text-color);
@@ -54,47 +62,78 @@ body {
     padding: 1rem;
     display: flex;
     justify-content: center;
-    /* Texture overlay */
+    /* Enhanced Texture & Vignette Overlay */
     background-image:
-        linear-gradient(rgba(220, 205, 185, 0.15) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(220, 205, 185, 0.15) 1px, transparent 1px),
-        radial-gradient(ellipse at center, rgba(169, 140, 112, 0.2), transparent 70%);
-    background-size: 20px 20px, 20px 20px, 100% 100%;
+        /* Vignette for focus */
+        radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.1) 100%),
+        /* Fibrous texture */
+        url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjRjhGMkU4Ij48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIHg9IjIiIHk9IjMiIGZpbGw9InJnYmEoMCwwLDAsMC4wNSkiPjwvcmVjdD4KPC9zdmc+'),
+        /* Water stains */
+        radial-gradient(ellipse at 80% 20%, var(--water-stain-color) 0%, transparent 50%),
+        radial-gradient(ellipse at 10% 90%, var(--water-stain-color) 0%, transparent 60%);
 }
 
-/* --- Main Layout & Header --- */
+/* --- Main Layout: The Central Scroll --- */
 .container {
     max-width: 650px;
     width: 100%;
+    /* Lined paper effect */
     background-image:
         repeating-linear-gradient(to bottom,
             transparent 0,
-            transparent 23px,
-            var(--border-color) 24px);
+            transparent 27px,
+            var(--border-color) 28px);
     background-color: var(--bg-color);
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-heavy), inset 0 0 40px rgba(0, 0, 0, 0.08);
+    /* Make it look like a real object on the page */
+    box-shadow:
+        var(--shadow-heavy),
+        /* Main shadow */
+        inset 0 0 50px rgba(0, 0, 0, 0.08);
+    /* Inner depth */
     border-radius: 3px 2px 5px 2px;
-    line-height: 24px;
+    /* Irregular radius */
+    line-height: 28px;
     /* Aligns text with the lines */
+    position: relative;
 }
 
+/* Ink blot decorative element */
+.container::before {
+    content: '';
+    position: absolute;
+    top: 5%;
+    right: 3%;
+    width: 60px;
+    height: 60px;
+    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZmlsdGVyIGlkPSJzbHVkZ2UiPjxmZUdhdXNzaWFuQmx1ciBpbj0iU291cmNlR3JhcGhpYyIgc3RkRGV2aWF0aW9uPSI0IiByZXN1bHQ9ImJsdXIiIC8+PGZlQ29sb3JNYXRyaXggaW49ImJsdXIiIG1vZGU9Im1hdHJpeCIgdmFsdWVzPSIxIDAgMCAwIDAgIDAgMSAwIDAgMCAgMCAwIDEgMCAwICAwIDAgMCAyMCAtNyIgcmVzdWx0PSJzbHVkZ2UiIC8+PC9maWx0ZXI+PGNpcmNsZSBjeD0iNDAiIGN5PSI1MCIgcj0iMjUiIGZpbGw9IiM0MTM1MkQiIGZpbHRlcj0idXJsKCNzbHVkZ2UpIiAvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNDUiIHI9IjE1IiBmaWxsPSIjNDEzNTJEIiBmaWx0ZXI9InVybCgjc2x1ZGdlKSIgLz48L3N2Zz4=') no-repeat;
+    background-size: contain;
+    opacity: 0.1;
+    transform: rotate(15deg);
+    pointer-events: none;
+}
+
+
+/* --- Header: The Scribe's Title --- */
 header {
     text-align: center;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid;
+    border-image: linear-gradient(to right, transparent, var(--border-color), transparent) 1;
 }
 
 .header-top h1 {
-    font-size: 3.5rem;
+    font-family: var(--font-heading);
+    font-size: 3.8rem;
     font-weight: 400;
     color: var(--primary-text-color);
     text-shadow: var(--text-shadow);
     cursor: pointer;
     user-select: none;
     padding: 0.25rem 0.75rem;
+    letter-spacing: 1px;
 }
 
 .date-nav {
@@ -102,11 +141,11 @@ header {
     align-items: center;
     justify-content: center;
     gap: 1rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
 }
 
 .nav-arrow {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     font-weight: 400;
     color: var(--secondary-text-color);
     cursor: pointer;
@@ -117,91 +156,108 @@ header {
 
 .nav-arrow:hover {
     color: var(--primary-text-color);
-    transform: scale(1.1);
+    transform: scale(1.15) translateY(-1px);
 }
 
 header .date {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 400;
     color: var(--secondary-text-color);
     min-width: 210px;
     text-align: center;
     cursor: pointer;
     user-select: none;
+    transition: var(--transition-fast);
 }
 
 header .date:hover {
     color: var(--primary-text-color);
 }
 
-/* --- Progress Bar --- */
+/* --- Progress Bar: The Inkwell's Measure --- */
 .progress-container {
     width: 100%;
     max-width: 400px;
-    height: 15px;
+    height: 28px;
+    /* Align with line height */
     background-color: var(--progress-bar-bg);
     border-radius: var(--border-radius-md);
     margin: 2rem auto;
-    overflow: hidden;
     position: relative;
     border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .progress-bar-inner {
     height: 100%;
     width: 0;
-    background-color: var(--progress-fill);
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--progress-fill);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
+/* Text is always visible, but color changes based on fill */
 .progress-text {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 1rem;
     font-weight: 400;
     color: var(--primary-text-color);
-    opacity: 0.9;
-    user-select: none;
-    text-shadow: none;
+    z-index: 2;
+    /* Base text color */
+    mix-blend-mode: normal;
+    transition: color 0.5s ease;
+}
+
+/* This class will be added via JS when progress > 0 */
+.progress-text.on-fill {
+    color: var(--progress-text-on-fill);
+    mix-blend-mode: difference;
+    /* Creates the cool cutout effect */
 }
 
 /* --- Analytics & Data Cards --- */
 .analytics-container {
-    padding-top: 1rem;
-}
-
-.analytics-section {
-    margin-bottom: 2rem;
+    padding-top: 1.5rem;
 }
 
 .analytics-section h2 {
-    font-size: 1.5rem;
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
     font-weight: 400;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     color: var(--primary-text-color);
-    padding-left: 0.5rem;
+    padding-left: 1rem;
     border-left: 2px solid var(--accent-color);
 }
 
 .chart-container,
 .stat-card,
 .data-management-card {
-    background: var(--card-bg-color);
+    background-color: var(--card-bg-color);
+    background-image: radial-gradient(ellipse at 0 0, var(--water-stain-color) 0%, transparent 60%);
     padding: 1.5rem;
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-light);
     margin-bottom: 1.5rem;
     backdrop-filter: blur(2px);
-    /* Adds to the layered look */
 }
 
 .chart-container h2,
 .data-management-card h2 {
+    font-family: var(--font-heading);
     text-align: center;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     font-weight: 400;
     margin-bottom: 1.5rem;
     color: var(--secondary-text-color);
@@ -210,38 +266,37 @@ header .date:hover {
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
 .stat-card {
-    position: relative;
-    transition: var(--transition-fast);
     padding: 1.25rem;
     text-align: center;
+    transition: var(--transition-fast);
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.02);
     box-shadow: var(--shadow-heavy);
+    border-color: var(--secondary-text-color);
 }
 
 .stat-card .value {
+    font-family: var(--font-main);
     font-size: 3rem;
-    font-weight: 400;
     color: var(--primary-text-color);
     line-height: 1;
 }
 
 .stat-card .label {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--secondary-text-color);
-    margin-top: 0.5rem;
-    font-weight: 400;
+    margin-top: 0.75rem;
 }
 
 .stat-card .sublabel {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--secondary-text-color);
     opacity: 0.7;
     margin-top: 0.25rem;
@@ -250,7 +305,7 @@ header .date:hover {
 
 .welcome-message {
     text-align: center;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: var(--secondary-text-color);
     margin-bottom: 1.5rem;
 }
@@ -262,10 +317,10 @@ header .date:hover {
     justify-content: center;
 }
 
-/* --- BUTTON STYLING --- */
+/* --- Button Styling: Pressed Ink Stamps --- */
 .data-actions button,
 .modal-actions button {
-    padding: 0.8rem 1rem;
+    padding: 0.8rem 1.2rem;
     border: 1px solid var(--border-color);
     background-color: transparent;
     color: var(--primary-text-color);
@@ -278,57 +333,73 @@ header .date:hover {
     box-shadow: var(--shadow-light);
 }
 
+.data-actions button:hover,
+.modal-actions button:hover {
+    box-shadow: var(--shadow-light), inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+    transform: translateY(1px);
+}
+
+.data-actions button:active,
+.modal-actions button:active {
+    box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(2px);
+}
+
+
 .data-actions button:not(.btn-danger):hover,
 .modal-actions button:not(.btn-danger):hover {
-    background-color: var(--accent-color);
-    color: var(--accent-color-inverted);
     border-color: var(--accent-color);
-    box-shadow: var(--shadow-heavy);
+    color: var(--accent-color);
 }
 
 .btn-danger {
-    background-color: transparent;
     color: var(--danger-color) !important;
     border-color: var(--danger-color) !important;
 }
 
 .btn-danger:hover {
-    background-color: var(--danger-hover-bg) !important;
+    background-color: var(--danger-color) !important;
     border-color: var(--danger-hover-bg) !important;
     color: var(--danger-text-color) !important;
+    box-shadow: var(--shadow-heavy);
+    transform: translateY(-2px);
 }
 
-/* --- FLOATING ACTION BUTTON (Wax Seal) --- */
+/* --- Floating Action Button: The Royal Wax Seal --- */
 .add-task-btn {
     position: fixed;
     bottom: 1.5rem;
     right: 1.5rem;
-    width: 60px;
-    height: 60px;
-    background: var(--danger-color);
-    /* Wax color */
-    color: var(--accent-color-inverted);
+    width: 64px;
+    height: 64px;
+    background: radial-gradient(ellipse at center, #A94444 0%, #8D2A2A 100%);
+    color: rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
-    font-family: serif;
-    /* A more formal plus */
+    font-size: 3.5rem;
+    font-family: 'Times New Roman', Times, serif;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
     transition: var(--transition-fast);
     z-index: 999;
-    border: 2px solid #A53A3A;
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3), inset 0px 0px 5px rgba(255, 255, 255, 0.2);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    border: 3px solid #7B2424;
+    box-shadow:
+        0px 8px 15px rgba(0, 0, 0, 0.3),
+        inset 0px 2px 3px rgba(255, 255, 255, 0.2),
+        inset 0px -2px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .add-task-btn:hover {
-    transform: scale(1.08) rotate(5deg);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    background: var(--danger-hover-bg);
+    transform: scale(1.1) rotate(10deg);
+    box-shadow:
+        0 15px 30px rgba(0, 0, 0, 0.25),
+        inset 0px 2px 3px rgba(255, 255, 255, 0.3),
+        inset 0px -2px 3px rgba(0, 0, 0, 0.4);
+    background: radial-gradient(ellipse at center, #B84B4B 0%, #9A2C2C 100%);
 }
 
 
@@ -340,8 +411,8 @@ header .date:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(75, 63, 52, 0.3);
-    backdrop-filter: blur(5px);
+    background: rgba(65, 53, 45, 0.4);
+    backdrop-filter: blur(4px);
     align-items: center;
     justify-content: center;
     z-index: 1000;
@@ -353,9 +424,9 @@ header .date:hover {
     background-image:
         repeating-linear-gradient(to bottom,
             transparent 0,
-            transparent 23px,
-            var(--border-color) 24px);
-    padding: 2rem;
+            transparent 27px,
+            var(--border-color) 28px);
+    padding: 2.5rem;
     border-radius: var(--border-radius-lg);
     width: 100%;
     max-width: 450px;
@@ -363,7 +434,7 @@ header .date:hover {
     overflow-y: auto;
     box-shadow: var(--shadow-heavy), inset 0 0 40px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--accent-color);
-    line-height: 24px;
+    line-height: 28px;
 }
 
 
@@ -371,11 +442,11 @@ header .date:hover {
 .modal-content input[type="number"],
 .modal-content select {
     width: 100%;
-    padding: 0.5rem 0.5rem;
-    margin-bottom: 1rem;
+    padding: 0.5rem 0.2rem;
+    margin-bottom: 1.5rem;
     border: none;
     border-bottom: 1px dashed var(--border-color);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     border-radius: 0;
     transition: var(--transition-fast);
     background: transparent;
@@ -386,20 +457,20 @@ header .date:hover {
 
 .modal-content input::placeholder {
     color: var(--secondary-text-color);
-    opacity: 0.7;
+    opacity: 0.8;
 }
 
 .modal-content input[type="text"]:focus,
 .modal-content input[type="number"]:focus,
 .modal-content select:focus {
-    border-bottom: 1px solid var(--accent-color);
+    border-bottom: 2px solid var(--accent-color);
     outline: none;
 }
 
 .days-selection {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
 
@@ -419,6 +490,7 @@ header .date:hover {
     background: var(--accent-color);
     color: var(--accent-color-inverted);
     border-color: var(--accent-color);
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 
@@ -433,13 +505,14 @@ header .date:hover {
     white-space: nowrap;
 }
 
-/* --- Task List --- */
+/* --- Task List: The Daily Ledger --- */
 .task-list {
     list-style: none;
 }
 
 .group-header {
-    font-size: 1.5rem;
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
     font-weight: 400;
     padding: 1.5rem 0 0.75rem 0;
     margin-top: 1rem;
@@ -454,33 +527,33 @@ header .date:hover {
 .task-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.5rem;
-    border-bottom: 1px dotted rgba(121, 106, 93, 0.2);
+    padding: 0.5rem;
+    border-bottom: 1px dotted rgba(121, 106, 93, 0.3);
     cursor: pointer;
-    transition: background-color 0.15s ease-in-out;
-    min-height: 48px;
+    transition: background-color 0.2s ease-in-out;
+    min-height: 56px;
     /* 2 lines of text */
 }
 
 .task-item:hover {
-    background: rgba(189, 174, 159, 0.1);
+    background: rgba(211, 198, 181, 0.2);
 }
 
 .task-item.completed .task-text {
     text-decoration: line-through;
+    text-decoration-color: rgba(154, 44, 44, 0.6);
     color: var(--secondary-text-color);
-    opacity: 0.8;
+    opacity: 0.9;
 }
 
-/* --- OLD SCHOOL CHECKBOX --- */
+/* --- The Scribe's Checkbox --- */
 .task-checkbox {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border: 2px solid var(--secondary-text-color);
-    border-radius: 2px;
+    border-radius: 3px;
     position: relative;
-    margin-right: 1rem;
+    margin-right: 1.2rem;
     cursor: pointer;
     appearance: none;
     transition: var(--transition-fast);
@@ -490,6 +563,7 @@ header .date:hover {
 
 .task-checkbox:hover {
     border-color: var(--primary-text-color);
+    transform: rotate(-5deg);
 }
 
 .task-checkbox:checked {
@@ -497,37 +571,39 @@ header .date:hover {
     border-color: var(--accent-color);
 }
 
-/* The hand-drawn 'X' */
+/* The hand-drawn 'X' mark */
 .task-checkbox:checked::before {
     content: 'X';
-    font-family: sans-serif;
-    font-weight: bold;
-    font-size: 22px;
+    font-family: 'Nothing You Could Do', cursive;
+    font-weight: 400;
+    font-size: 32px;
     color: var(--accent-color);
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -52%);
+    transform: translate(-50%, -50%) rotate(-8deg);
+    line-height: 1;
 }
 
 .task-text {
     flex-grow: 1;
-    font-size: 1.4rem;
-    font-weight: 400;
+    font-size: 1.5rem;
     word-break: break-word;
     margin-right: 0.5rem;
     transition: color 0.2s ease;
     line-height: 1.5;
-    /* For better readability with cursive */
 }
 
 
 .task-item.missed-yesterday .task-text {
     color: var(--danger-color);
+    font-weight: bold;
 }
 
 .task-item.missed-yesterday.completed .task-text {
     color: var(--secondary-text-color);
+    font-weight: normal;
 }
 
 /* --- Habit Tracker Tags --- */
@@ -543,8 +619,8 @@ header .date:hover {
     font-size: 1rem;
     background-color: transparent;
     color: var(--secondary-text-color);
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
     border: 1px solid var(--border-color);
     font-weight: 400;
     cursor: pointer;
@@ -555,11 +631,13 @@ header .date:hover {
 .habit-tracker:hover {
     background-color: rgba(0, 0, 0, 0.05);
     color: var(--primary-text-color);
+    border-color: var(--secondary-text-color);
 }
 
 .habit-formed {
     border-color: #A3B9A3;
     color: #4B6E4B;
+    background-color: rgba(75, 110, 75, 0.1);
 }
 
 *:focus,
