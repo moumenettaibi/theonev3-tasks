@@ -548,7 +548,7 @@ header .date:hover {
     width: 22px;
     height: 22px;
     border: 2px solid var(--secondary-text-color);
-    border-radius: 3px;
+    border-radius: 50%;
     position: relative;
     margin-right: 1.2rem;
     cursor: pointer;
@@ -560,7 +560,6 @@ header .date:hover {
 
 .task-checkbox:hover {
     border-color: var(--primary-text-color);
-    transform: rotate(-5deg);
 }
 
 .task-checkbox:checked {
@@ -568,18 +567,17 @@ header .date:hover {
     border-color: var(--accent-color);
 }
 
-/* The hand-drawn 'X' mark */
+/* Beautiful vintage checkmark */
 .task-checkbox:checked::before {
-    content: 'X';
-    font-family: 'Nothing You Could Do', cursive;
+    content: '✓';
+    font-family: 'Marck Script', cursive;
     font-weight: 400;
-    font-size: 32px;
+    font-size: 24px;
     color: var(--accent-color);
-    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-8deg);
+    transform: translate(-50%, -50%) rotate(-12deg);
     line-height: 1;
 }
 
