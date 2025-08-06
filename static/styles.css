@@ -99,20 +99,7 @@ body {
     position: relative;
 }
 
-/* Ink blot decorative element */
-.container::before {
-    content: '';
-    position: absolute;
-    top: 5%;
-    right: 3%;
-    width: 60px;
-    height: 60px;
-    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZmlsdGVyIGlkPSJzbHVkZ2UiPjxmZUdhdXNzaWFuQmx1ciBpbj0iU291cmNlR3JhcGhpYyIgc3RkRGV2aWF0aW9uPSI0IiByZXN1bHQ9ImJsdXIiIC8+PGZlQ29sb3JNYXRyaXggaW49ImJsdXIiIG1vZGU9Im1hdHJpeCIgdmFsdWVzPSIxIDAgMCAwIDAgIDAgMSAwIDAgMCAgMCAwIDEgMCAwICAwIDAgMCAyMCAtNyIgcmVzdWx0PSJzbHVkZ2UiIC8+PC9maWx0ZXI+PGNpcmNsZSBjeD0iNDAiIGN5PSI1MCIgcj0iMjUiIGZpbGw9IiM0MTM1MkQiIGZpbHRlcj0idXJsKCNzbHVkZ2UpIiAvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNDUiIHI9IjE1IiBmaWxsPSIjNDEzNTJEIiBmaWx0ZXI9InVybCgjc2x1ZGdlKSIgLz48L3N2Zz4=') no-repeat;
-    background-size: contain;
-    opacity: 0.1;
-    transform: rotate(15deg);
-    pointer-events: none;
-}
+
 
 
 /* --- Header: The Scribe's Title --- */
@@ -199,7 +186,7 @@ header .date:hover {
     z-index: 1;
 }
 
-/* Text is always visible, but color changes based on fill */
+/* Text automatically contrasts with progress fill */
 .progress-text {
     position: absolute;
     top: 0;
@@ -210,19 +197,13 @@ header .date:hover {
     justify-content: center;
     align-items: center;
     font-size: 1rem;
-    font-weight: 400;
-    color: var(--primary-text-color);
+    font-weight: 500;
+    color: #FFFFFF;
     z-index: 2;
-    /* Base text color */
-    mix-blend-mode: normal;
-    transition: color 0.5s ease;
-}
-
-/* This class will be added via JS when progress > 0 */
-.progress-text.on-fill {
-    color: var(--progress-text-on-fill);
     mix-blend-mode: difference;
-    /* Creates the cool cutout effect */
+    transition: all 0.5s ease;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 8px rgba(255, 255, 255, 0.6);
+    filter: contrast(1.5) brightness(1.2);
 }
 
 /* --- Analytics & Data Cards --- */
@@ -678,13 +659,14 @@ span:focus {
 
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 480px) {
+
     /* Position modal higher to accommodate keyboard */
     .modal {
         align-items: flex-start;
         padding-top: 10vh;
         padding-bottom: 2rem;
     }
-    
+
     /* Make modal content smaller on phones */
     .modal-content {
         padding: 1.5rem;
@@ -692,7 +674,7 @@ span:focus {
         margin: 0.5rem;
         max-height: 80vh;
     }
-    
+
     /* Reduce input font sizes */
     .modal-content input[type="text"],
     .modal-content input[type="number"],
@@ -701,58 +683,58 @@ span:focus {
         padding: 0.4rem 0.2rem;
         margin-bottom: 1rem;
     }
-    
+
     /* Make day selection buttons smaller */
     .days-selection {
         gap: 0.5rem;
         margin-bottom: 1rem;
     }
-    
+
     .day-btn {
         padding: 0.5rem 0.2rem;
         font-size: 0.9rem;
     }
-    
+
     /* Reduce modal action button sizes */
     .modal-actions {
         gap: 0.5rem;
         margin-top: 1rem;
     }
-    
+
     .modal-actions button {
         padding: 0.6rem 0.8rem;
         font-size: 1rem;
     }
-    
+
     /* Smaller headings in modals */
     .modal-content h3 {
         font-size: 1.2rem !important;
         margin-bottom: 0.5rem !important;
     }
-    
+
     /* Reduce paragraph text size */
     .modal-content p {
         font-size: 0.8rem !important;
         margin-bottom: 1rem !important;
     }
-    
+
     /* Smaller labels */
     .modal-content label {
         font-size: 0.8rem !important;
         margin-bottom: 0.3rem !important;
     }
-    
+
     /* Improve stat cards on mobile */
     .stats-grid {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 1rem;
     }
-    
+
     .stat-card {
         padding: 0.8rem;
         min-height: 100px;
     }
-    
+
     .stat-card .value {
         font-size: 1.6rem;
         word-break: normal;
@@ -762,7 +744,7 @@ span:focus {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    
+
     .stat-card .label {
         font-size: 0.85rem;
         margin-top: 0.4rem;
@@ -773,7 +755,7 @@ span:focus {
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    
+
     .stat-card .sublabel {
         font-size: 0.7rem;
         margin-top: 0.2rem;

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
             color: #41352D;
             padding: 20px;
         }
+
         .chart-container {
             width: 400px;
             height: 300px;
@@ -22,9 +24,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Chart Color Test</h1>
-    
+
     <div class="chart-container">
         <canvas id="testChart"></canvas>
     </div>
@@ -96,7 +99,7 @@
                         },
                         ticks: {
                             color: '#8A796D',
-                            callback: function(value) {
+                            callback: function (value) {
                                 return value + '%';
                             }
                         }
@@ -116,4 +119,5 @@
         console.log('Chart test loaded successfully!');
     </script>
 </body>
+
 </html>
