@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Nothing You Could Do', cursive;
+            background-color: #F8F2E8;
+            color: #41352D;
+            padding: 20px;
+        }
+        .chart-container {
+            width: 400px;
+            height: 300px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chart Color Test</h1>
+    
+    <div class="chart-container">
+        <canvas id="testChart"></canvas>
+    </div>
+
+    <script>
+        // Test data
+        const testData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            data: [80, 65, 90, 45, 75, 85, 95]
+        };
+
+        // Website colors
+        const colors = {
+            green: '#5D4037',      // Website accent brown
+            red: '#9A2C2C',        // Website danger red
+            orange: '#8A796D',     // Website secondary text
+            greenFill: 'rgba(93, 64, 55, 0.15)',
+            redFill: 'rgba(154, 44, 44, 0.15)',
+            orangeFill: 'rgba(138, 121, 109, 0.15)'
+        };
+
+        // Create point colors based on values
+        const pointColors = testData.data.map(value => {
+            if (value >= 80) return colors.green;
+            if (value >= 50) return colors.orange;
+            return colors.red;
+        });
+
+        // Create chart
+        const ctx = document.getElementById('testChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: testData.labels,
+                datasets: [{
+                    label: 'Completion %',
+                    data: testData.data,
+                    backgroundColor: colors.greenFill,
+                    borderColor: colors.green,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: '#F8F2E8',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#F8F2E8',
+                        titleColor: '#41352D',
+                        bodyColor: '#41352D',
+                        borderColor: '#D3C6B5',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: '#D3C6B5'
+                        },
+                        ticks: {
+                            color: '#8A796D',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#D3C6B5'
+                        },
+                        ticks: {
+                            color: '#8A796D'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Chart test loaded successfully!');
+    </script>
+</body>
+</html>
