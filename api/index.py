@@ -147,7 +147,7 @@ def login_page():
             login_user(user)
             # --- MODIFIED: Make the session permanent for the configured lifetime ---
             session.permanent = True
-            return jsonify({'success': True, 'message': 'Logged in successfully!'})
+            return jsonify({'success': True, 'message': 'Logged in successfully!', 'redirect': '/~'})
         return jsonify({'success': False, 'message': 'Invalid username or password.'}), 401
     return render_template('login.html')
 
@@ -205,7 +205,7 @@ def register():
     login_user(new_user)
     # --- MODIFIED: Make the session permanent after registration too ---
     session.permanent = True
-    return jsonify({'success': True, 'message': 'Registration successful!'})
+    return jsonify({'success': True, 'message': 'Registration successful!', 'redirect': '/~'})
 
 @app.route('/logout', methods=['POST'])
 @login_required
@@ -215,8 +215,16 @@ def logout():
 
 # --- Main Application Routes ---
 @app.route('/')
-@login_required
 def home():
+    if current_user.is_authenticated:
+        tasks_data = read_user_tasks()
+        return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+    else:
+        return render_template('landing.html')
+
+@app.route('/~')
+@login_required
+def app_dashboard():
     tasks_data = read_user_tasks()
     return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
 

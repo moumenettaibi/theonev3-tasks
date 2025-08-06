@@ -237,7 +237,7 @@
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
 
         async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); alert("Connection error: Could not save your changes."); } finally { isSyncing = false; } }, 200); }
-        async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); if (response.ok) { window.location.href = '/login'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
+        async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); if (response.ok) { window.location.href = '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
         function showTasksView() { tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
