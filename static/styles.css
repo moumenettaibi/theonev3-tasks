@@ -161,6 +161,99 @@ header .date:hover {
     color: var(--primary-text-color);
 }
 
+/* --- NEW: Main Navigation Bar --- */
+.main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.nav-left, .nav-right, .nav-center {
+    display: flex;
+    align-items: center;
+}
+
+.nav-left {
+    gap: 1rem;
+}
+
+.brand-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 400;
+    color: var(--primary-text-color);
+    text-shadow: var(--text-shadow);
+    user-select: none;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-link {
+    font-family: var(--font-main);
+    font-size: 1.4rem;
+    color: var(--secondary-text-color);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--primary-text-color);
+    border-bottom-color: var(--accent-color);
+}
+
+.profile-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--border-color);
+    transition: var(--transition-fast);
+}
+
+.profile-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--secondary-text-color);
+    transition: var(--transition-fast);
+}
+
+.profile-icon:hover {
+    border-color: var(--accent-color);
+}
+
+.profile-icon:hover svg {
+    color: var(--accent-color);
+}
+
+.menu-btn {
+    display: none; /* Hidden on desktop */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.menu-btn svg {
+    width: 28px;
+    height: 28px;
+    color: var(--primary-text-color);
+}
+
 /* --- Progress Bar: The Inkwell's Measure --- */
 .progress-container {
     width: 100%;
@@ -656,6 +749,56 @@ span:focus {
 }
 
 /* --- Mobile Responsive Styles --- */
+@media (max-width: 768px) {
+    .nav-center {
+        display: none; /* Hide links in the center on tablet and smaller */
+    }
+
+    .menu-btn {
+        display: block; /* Show hamburger menu */
+    }
+
+    .nav-links {
+        display: none; /* Hide by default */
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-light);
+        z-index: 100;
+        flex-direction: column;
+        gap: 0;
+        padding: 1rem 0;
+    }
+
+    .nav-links.show {
+        display: flex; /* Show when toggled */
+    }
+
+    .nav-links li {
+        width: 100%;
+        text-align: center;
+    }
+
+    .nav-link {
+        padding: 1rem;
+        display: block;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+        background-color: var(--water-stain-color);
+        border-bottom-color: var(--border-color);
+    }
+
+    .brand-title {
+        font-size: 2rem;
+    }
+}
+
 @media (max-width: 480px) {
 
     /* Position modal higher to accommodate keyboard */
