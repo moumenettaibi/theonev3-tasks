@@ -44,9 +44,32 @@
 
     <div class="container">
         <header>
-            <div class="header-top">
-                <h1></h1>
-            </div>
+            <nav class="main-nav">
+                <div class="nav-left">
+                    <button class="menu-btn" id="menuBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="brand-title">The One</h1>
+                </div>
+                <div class="nav-center">
+                    <ul class="nav-links" id="navLinks">
+                        <li><a href="#" class="nav-link active" id="navLinkTasks">Tasks</a></li>
+                        <li><a href="#" class="nav-link" id="navLinkWall">The Wall</a></li>
+                    </ul>
+                </div>
+                <div class="nav-right">
+                    <div class="profile-icon" id="profileIcon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+            </nav>
             <div class="date-nav">
                 <span class="nav-arrow" id="prevDayBtn">‹</span>
                 <div class="date" id="currentDate"></div>
@@ -212,7 +235,11 @@
 
     <script>
         // DOM Elements
-        const headerTitle = document.querySelector('.header-top h1'); const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage');
+        const menuBtn = document.getElementById('menuBtn');
+        const navLinks = document.getElementById('navLinks');
+        const navLinkTasks = document.getElementById('navLinkTasks');
+        const navLinkWall = document.getElementById('navLinkWall');
+        const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage');
         const progressContainer = document.getElementById('progressContainer'); const progressBarInner = document.getElementById('progressBarInner'); const progressText = document.getElementById('progressText');
 
         // State
@@ -240,8 +267,28 @@
         async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); if (response.ok) { window.location.href = '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
-        function showTasksView() { tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
-        function showAnalyticsView() { tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
+        function showTasksView() {
+            tasksContainer.style.display = 'block';
+            analyticsContainer.style.display = 'none';
+            dateNav.style.visibility = 'visible';
+            progressContainer.style.display = 'block';
+            addTaskBtn.style.display = 'flex';
+            navLinkTasks.classList.add('active');
+            navLinkWall.classList.remove('active');
+            navLinks.classList.remove('show'); // Close mobile menu
+            updateView();
+        }
+        function showAnalyticsView() {
+            tasksContainer.style.display = 'none';
+            analyticsContainer.style.display = 'block';
+            dateNav.style.visibility = 'hidden';
+            progressContainer.style.display = 'none';
+            addTaskBtn.style.display = 'none';
+            navLinkTasks.classList.remove('active');
+            navLinkWall.classList.add('active');
+            navLinks.classList.remove('show'); // Close mobile menu
+            renderAnalytics();
+        }
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
 
@@ -1007,7 +1054,10 @@
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
 
         // --- EVENT LISTENERS ---
-        headerTitle.addEventListener('click', () => { if (tasksContainer.style.display !== 'none') { showAnalyticsView(); } else { showTasksView(); } }); addTaskBtn.addEventListener('click', () => { editingTaskId = null; taskInput.value = ''; deleteBtn.style.display = 'none'; openTaskModal(); }); prevDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() - 1); updateView(); }); nextDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() + 1); updateView(); }); currentDateElement.addEventListener('click', () => { currentDisplayDate = new Date(); updateView(); }); cancelBtn.addEventListener('click', closeTaskModal); saveBtn.addEventListener('click', saveTask); deleteBtn.addEventListener('click', deleteTask); taskList.addEventListener('click', e => { if (e.target.classList.contains('group-header') && e.target.classList.contains('deletable')) { openDeleteGroupModal(e.target.dataset.group); } if (e.target.classList.contains('habit-tracker')) { e.stopPropagation(); const taskId = e.target.dataset.taskId; openHabitGoalModal(taskId); } }); saveHabitGoalBtn.addEventListener('click', saveHabitGoal); cancelHabitGoalBtn.addEventListener('click', closeHabitGoalModal); cancelDeleteGroupBtn.addEventListener('click', closeDeleteGroupModal); confirmDeleteGroupBtn.addEventListener('click', () => { if (groupToDelete) { _deleteGroup(groupToDelete); } closeDeleteGroupModal(); }); groupSelect.addEventListener('change', () => { if (groupSelect.value === '--add-new--') { newGroupInput.style.display = 'block'; newGroupInput.focus(); } else { newGroupInput.style.display = 'none'; } }); daysSelection.addEventListener('click', e => { if (e.target.classList.contains('day-btn')) { if (e.target.dataset.day === 'Daily') { const isSelected = e.target.classList.contains('selected'); document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); if (!isSelected) { e.target.classList.add('selected'); } } else { document.querySelector('.day-btn[data-day="Daily"]').classList.remove('selected'); e.target.classList.toggle('selected'); } } }); exportBtn.addEventListener('click', exportData); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', importData); logoutBtn.addEventListener('click', handleLogout);
+        menuBtn.addEventListener('click', () => navLinks.classList.toggle('show'));
+        navLinkTasks.addEventListener('click', (e) => { e.preventDefault(); showTasksView(); });
+        navLinkWall.addEventListener('click', (e) => { e.preventDefault(); showAnalyticsView(); });
+        addTaskBtn.addEventListener('click', () => { editingTaskId = null; taskInput.value = ''; deleteBtn.style.display = 'none'; openTaskModal(); }); prevDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() - 1); updateView(); }); nextDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() + 1); updateView(); }); currentDateElement.addEventListener('click', () => { currentDisplayDate = new Date(); updateView(); }); cancelBtn.addEventListener('click', closeTaskModal); saveBtn.addEventListener('click', saveTask); deleteBtn.addEventListener('click', deleteTask); taskList.addEventListener('click', e => { if (e.target.classList.contains('group-header') && e.target.classList.contains('deletable')) { openDeleteGroupModal(e.target.dataset.group); } if (e.target.classList.contains('habit-tracker')) { e.stopPropagation(); const taskId = e.target.dataset.taskId; openHabitGoalModal(taskId); } }); saveHabitGoalBtn.addEventListener('click', saveHabitGoal); cancelHabitGoalBtn.addEventListener('click', closeHabitGoalModal); cancelDeleteGroupBtn.addEventListener('click', closeDeleteGroupModal); confirmDeleteGroupBtn.addEventListener('click', () => { if (groupToDelete) { _deleteGroup(groupToDelete); } closeDeleteGroupModal(); }); groupSelect.addEventListener('change', () => { if (groupSelect.value === '--add-new--') { newGroupInput.style.display = 'block'; newGroupInput.focus(); } else { newGroupInput.style.display = 'none'; } }); daysSelection.addEventListener('click', e => { if (e.target.classList.contains('day-btn')) { if (e.target.dataset.day === 'Daily') { const isSelected = e.target.classList.contains('selected'); document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); if (!isSelected) { e.target.classList.add('selected'); } } else { document.querySelector('.day-btn[data-day="Daily"]').classList.remove('selected'); e.target.classList.toggle('selected'); } } }); exportBtn.addEventListener('click', exportData); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', importData); logoutBtn.addEventListener('click', handleLogout);
 
         // --- CLICK OUTSIDE TO CLOSE MODALS ---
         taskModal.addEventListener('click', (e) => { if (e.target === taskModal) { closeTaskModal(); } });
