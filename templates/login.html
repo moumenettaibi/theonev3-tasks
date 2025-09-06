@@ -3,44 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- SEO Meta Tags -->
-    <title>Login - THE ONE V3 | Minimalist Task & Habit Tracker</title>
-    <meta name="description" content="Sign in to THE ONE V3 to access your minimalist task and habit tracker. Focus on what matters most.">
-    <meta name="robots" content="noindex, nofollow">
-    
+    <title>Login - THE ONE V3</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: #F5F5F5; color: #333333; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .login-container { max-width: 400px; width: 100%; background: #FFFFFF; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        h1 { text-align: center; font-size: 2rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem; }
+        .tagline { text-align: center; color: #666; margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; }
+        .form-group input { width: 100%; padding: 0.8rem 1rem; border: 2px solid #E0E0E0; font-size: 1rem; border-radius: 8px; transition: border-color 0.3s ease; background: #FFFFFF; }
+        .form-group input:focus { border-color: #000000; outline: none; }
+        .button-group { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .button-group button { flex-grow: 1; padding: 0.8rem 1.25rem; border: 2px solid transparent; background: #000000; color: #FFFFFF; cursor: pointer; font-size: 1rem; border-radius: 8px; font-weight: 500; transition: all 0.2s ease; }
+        .button-group button#registerBtn { background: #FFFFFF; color: #000000; border-color: #E0E0E0; }
+        .button-group button:hover { opacity: 0.8; }
+        .button-group button#registerBtn:hover { background: #f0f0f0; border-color: #ccc; }
+        #error-message { color: #FF3B30; text-align: center; margin-top: 1.5rem; font-size: 0.9rem; min-height: 1.2em; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="login-container">
-            <header class="login-header">
-                <h1 class="login-title">THE ONE V3</h1> <br>
-                <p class="login-subtitle">Welcome Back</p>
-                <p class="login-description">Sign in to continue your productivity journey</p>
-            </header>
-            
-            <form id="authForm" class="login-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Enter your username">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
-                </div>
-                <div id="error-message" class="error-message"></div>
-                <div class="button-group">
-                    <button type="submit" id="loginBtn" class="btn-primary">Login</button>
-                    <button type="button" id="registerBtn" class="btn-secondary">Register</button>
-                </div>
-            </form>
-            
-            <div class="login-footer">
-                <p>New to THE ONE V3? Click Register to create your account</p>
+    <div class="login-container">
+        <h1>Welcome</h1>
+        <p class="tagline">Sign in or create an account to continue</p>
+        <form id="authForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
             </div>
-        </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div id="error-message"></div>
+            <div class="button-group">
+                <button type="submit" id="loginBtn">Login</button>
+                <button type="button" id="registerBtn">Register</button>
+            </div>
+        </form>
     </div>
 
     <script>
@@ -59,7 +60,7 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    window.location.href = result.redirect || '/app';
+                    window.location.href = '/';
                 } else {
                     errorMessage.textContent = result.message || 'An unknown error occurred.';
                 }
