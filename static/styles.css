@@ -527,6 +527,24 @@ header .date:hover {
 }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.3); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
 .modal-content { background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color); }
+
+@media (max-width: 768px) {
+  .modal {
+    padding: 1rem 1rem 2rem; /* Extra bottom padding for keyboard */
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: 1rem;
+  }
+  .modal-content {
+    max-height: 70vh; /* Reduced to accommodate keyboard height */
+    margin: 0 auto;
+    width: 95%;
+    max-width: none;
+  }
+  .modal-content input:focus {
+    position: relative; /* Ensure focus doesn't shift layout */
+  }
+}
 .modal-content input[type="text"], .modal-content input[type="number"], .modal-content select { width: 100%; padding: 0.85rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); font-size: 1rem; border-radius: var(--border-radius-md); background: var(--card-bg-color); color: var(--primary-text-color); }
 .modal-content input::placeholder { color: var(--secondary-text-color); opacity: 0.7; }
 .modal-content input:focus, .modal-content select:focus { border-color: var(--accent-color); outline: none; box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1); }
