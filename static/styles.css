@@ -489,6 +489,12 @@ header .date:hover {
 
 /* --- Task List & Other App Styles --- */
 .task-list { list-style: none; }
+
+@media (max-width: 768px) {
+  #tasksContainer {
+    padding-bottom: 80px; /* Space for FAB and better last task visibility */
+  }
+}
 .group-header { font-size: 0.9rem; font-weight: 600; padding: 1.5rem 0 0.75rem 0; margin-top: 1rem; border-bottom: 1px solid var(--border-color); color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; }
 .group-header.deletable:hover { color: var(--primary-text-color); }
 .task-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0.5rem; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.15s ease-in-out; }
