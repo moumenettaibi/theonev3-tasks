@@ -586,6 +586,19 @@ body:has(.landing-hero) .container {
     box-shadow: var(--shadow-light);
 }
 
+.hamburger {
+    display: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--primary-text-color);
+    padding: 5px;
+    line-height: 1;
+    z-index: 1001;
+    background: none;
+    border: none;
+    text-decoration: none;
+}
+
 .logo {
     position: absolute;
     left: 2rem;
@@ -660,6 +673,50 @@ body:has(.landing-hero) .container {
 .login-btn:hover {
     background-color: var(--secondary-text-color);
     transform: translateY(-1px);
+}
+
+/* Mobile Menu Toggle */
+.nav-links.active {
+    display: flex !important;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-light);
+    padding: 1rem 0;
+    gap: 0;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-links.active li {
+    width: 100%;
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.nav-links.active li a {
+    padding: 0.5rem 1rem;
+    display: block;
+}
+
+.login-btn-mobile {
+    display: none;
+    margin-top: 1rem;
+    text-align: center;
 }
 
 /* Adjust hero padding for fixed nav on landing page */
@@ -864,6 +921,49 @@ body:has(.landing-hero) .container {
 
 /* --- Landing Page Responsive Styles --- */
 @media (max-width: 768px) {
+    .navbar {
+        justify-content: space-between;
+        padding: 1rem;
+        height: auto;
+    }
+
+    .logo {
+        left: auto;
+        position: relative;
+        margin-right: auto;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .login-btn {
+        display: none;
+    }
+
+    .nav-links.active {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Add login to mobile menu */
+    .nav-links.active::after {
+        content: '';
+        border-top: 1px solid var(--border-color);
+        width: 80%;
+        margin: 1rem auto 0;
+    }
+
+    .nav-links.active .login-btn-mobile {
+        display: block;
+        margin: 1rem auto 0;
+        padding: 0.5rem 2rem;
+    }
+
     .hero-title {
         font-size: 2.75rem;
     }
@@ -882,8 +982,229 @@ body:has(.landing-hero) .container {
     .cta-section {
         padding: 3rem 1rem;
     }
+
+    /* Add top spacing for section headings to avoid navbar overlap on scroll */
+    #what,
+    #why,
+    #how,
+    .features-section,
+    .how-section,
+    .benefits-section {
+        scroll-margin-top: 80px;
+    }
+
+    .section-title {
+        position: relative;
+        top: 0;
+    }
 }
 
+/* Enhanced responsiveness for smaller phones with improved UX */
+@media (max-width: 480px) {
+    /* Add top spacing for section headings to avoid navbar overlap on scroll */
+    #what,
+    #why,
+    #how,
+    .features-section,
+    .how-section,
+    .benefits-section,
+    .section-title {
+        scroll-margin-top: 40px; /* Reduced offset for navbar height on mobile */
+    }
+    body:has(.landing-hero) .container {
+        max-width: 100%;
+        padding: 0 0.75rem; /* Increased for better readability */
+    }
+
+    .navbar {
+        padding: 0.75rem 1rem;
+        height: auto;
+        justify-content: space-between;
+    }
+
+    .logo {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+
+    .logo-img {
+        width: 20px;
+        height: 20px;
+    }
+
+    .hamburger {
+        font-size: 1.8rem; /* Slightly larger for better touch target */
+        padding: 0.25rem;
+        transition: transform 0.2s ease; /* Smooth hover/tap */
+    }
+
+    .hamburger:active {
+        transform: scale(0.95); /* Subtle press feedback */
+    }
+
+    .landing-hero {
+        padding-top: 80px; /* Adjust for navbar height */
+    }
+
+    .hero-title {
+        font-size: 2.25rem;
+        line-height: 1.1; /* Tighter for space */
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem; /* More space below subtitle */
+    }
+
+    .hero-video-container {
+        padding-bottom: 56.25%;
+        margin: 1.5rem auto;
+        max-width: 95%;
+        border-radius: 12px; /* Softer corners */
+    }
+
+    .hero-actions {
+        gap: 1rem; /* Increased gap for better separation */
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        padding: 1rem 2rem; /* Larger padding for touch */
+        font-size: 1rem;
+        min-height: 48px; /* Better touch target */
+        width: 100%;
+        max-width: 280px;
+        border-radius: 12px; /* Softer */
+        transition: all 0.2s ease; /* Smooth interactions */
+        box-shadow: var(--shadow-light);
+    }
+
+    .btn-primary:active,
+    .btn-secondary:active {
+        transform: scale(0.98); /* Press feedback */
+    }
+
+    .btn-large {
+        padding: 1rem 2.5rem;
+        font-size: 1.05rem;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+        margin-bottom: 2.5rem; /* More space for sections */
+        line-height: 1.3;
+    }
+
+    .landing-hero,
+    .features-section,
+    .benefits-section,
+    .how-section,
+    .cta-section {
+        padding: 3rem 0.75rem; /* Increased vertical padding for smooth scroll feel */
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem; /* More gap between cards */
+    }
+
+    .feature-card {
+        padding: 2rem 1.5rem; /* Increased internal padding */
+        margin-bottom: 1rem;
+        transition: all 0.3s ease; /* Smooth hover/scroll effects */
+        border-radius: 16px;
+    }
+
+    .feature-card:active {
+        transform: translateY(2px); /* Subtle press */
+    }
+
+    .feature-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card p {
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    .benefit-item {
+        margin-bottom: 2.5rem;
+        padding: 0 1rem;
+    }
+
+    .benefit-item h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .benefit-item p {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        padding: 0 0.5rem;
+    }
+
+    .cta-section h2 {
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .cta-section p {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        padding: 0 0.5rem;
+    }
+
+    .landing-footer {
+        padding: 2rem 0.75rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    /* Smooth menu enhancements */
+    .nav-links.active {
+        animation: slideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother easing */
+        padding: 1.5rem 0; /* More padding */
+    }
+
+    .nav-links.active li {
+        padding: 1rem 0; /* Larger touch areas */
+    }
+
+    .nav-links.active li a {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.05rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .login-btn-mobile {
+        margin: 1.5rem auto 0;
+        padding: 1rem 2.5rem;
+        min-height: 48px;
+    }
+
+    /* Ensure video is responsive on very small screens */
+    .hero-video-container {
+        max-width: 100%;
+    }
+
+    .hero-video-container iframe {
+        max-height: 250px; /* Slightly larger for better viewability */
+    }
+
+    /* General smooth scrolling for the page */
+    html {
+        scroll-behavior: smooth;
+    }
+}
 
 /* --- Data & Account Management Card --- */
 

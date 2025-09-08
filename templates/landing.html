@@ -26,7 +26,7 @@
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.url_root }}">
-    <meta property="twitter:title" content="TYAJORA - Minimalist Task & Habit Tracker">
+    <meta property="twitter:title" content="YAJORA - Minimalist Task & Habit Tracker">
     <meta property="twitter:description"
         content="A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
     <meta property="twitter:image" content="{{ url_for('static', filename='favicon.png') }}">
@@ -85,10 +85,12 @@
         <img src="{{ url_for('static', filename='favicon.png') }}" alt="YAJORA Logo" class="logo-img">
         YAJORA
     </a>
+    <div class="hamburger" onclick="toggleMenu()">&#9776;</div>
     <ul class="nav-links">
         <li><a href="#what">WHAT</a></li>
         <li><a href="#why">WHY</a></li>
         <li><a href="#how">HOW</a></li>
+        <li class="login-mobile"><a class="login-btn-mobile" href="/login">Login</a></li>
     </ul>
     <a class="login-btn" href="/login">Login</a>
 </nav>
@@ -221,6 +223,24 @@
             <p>&copy; 2025 YAJORA. Crafted with care for focused minds.</p>
         </footer>
     </div>
+
+    <script>
+        function toggleMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('active');
+        }
+
+        // Close menu after clicking a link
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuLinks = document.querySelectorAll('.nav-links a');
+            menuLinks.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    const navLinks = document.querySelector('.nav-links');
+                    navLinks.classList.remove('active');
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
