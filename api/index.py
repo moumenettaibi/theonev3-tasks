@@ -151,6 +151,10 @@ def login_page():
         return jsonify({'success': False, 'message': 'Invalid username or password.'}), 401
     return render_template('login.html')
 
+@app.route('/signup', methods=['GET'])
+def signup_page():
+    return render_template('signup.html')
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -211,7 +215,7 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return jsonify({'success': True, 'message': 'Logged out successfully.'})
+    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'})
 
 # --- Main Application Routes ---
 @app.route('/')
@@ -221,6 +225,8 @@ def home():
         return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
     else:
         return render_template('landing.html')
+
+
 
 @app.route('/~')
 @login_required

@@ -6,27 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- SEO Meta Tags -->
-    <title>THE ONE V3 - Minimalist Task & Habit Tracker | Focus on What Matters</title>
+    <title>YAJORA</title>
     <meta name="description"
-        content="THE ONE V3 is a minimalist task and habit tracker designed to help you focus on what's important. Build streaks, track your progress, and stay motivated with our beautiful, distraction-free interface.">
+        content="YAJORA is a minimalist task and habit tracker designed to help you focus on what's important. Build streaks, track your progress, and stay motivated with our beautiful, distraction-free interface.">
     <meta name="keywords"
         content="task manager, habit tracker, to-do list, productivity, motivation, minimalist, simple, focus, streaks, daily habits, goal tracking">
-    <meta name="author" content="THE ONE V3">
+    <meta name="author" content="YAJORA">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url_root }}">
-    <meta property="og:title" content="THE ONE V3 - Minimalist Task & Habit Tracker">
+    <meta property="og:title" content="YAJORA - Minimalist Task & Habit Tracker">
     <meta property="og:description"
         content="A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
     <meta property="og:image" content="{{ url_for('static', filename='favicon.png') }}">
-    <meta property="og:site_name" content="THE ONE V3">
+    <meta property="og:site_name" content="YAJORA">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.url_root }}">
-    <meta property="twitter:title" content="THE ONE V3 - Minimalist Task & Habit Tracker">
+    <meta property="twitter:title" content="TYAJORA - Minimalist Task & Habit Tracker">
     <meta property="twitter:description"
         content="A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated.">
     <meta property="twitter:image" content="{{ url_for('static', filename='favicon.png') }}">
@@ -42,8 +42,8 @@
     <!-- Additional SEO Meta Tags -->
     <meta name="theme-color" content="#F8F2E8">
     <meta name="msapplication-TileColor" content="#F8F2E8">
-    <meta name="application-name" content="THE ONE V3">
-    <meta name="apple-mobile-web-app-title" content="THE ONE V3">
+    <meta name="application-name" content="YAJORA">
+    <meta name="apple-mobile-web-app-title" content="YAJORA">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
@@ -52,7 +52,7 @@
     {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "THE ONE V3",
+        "name": "YAJORA",
         "description": "A minimalist task and habit tracker to help you focus on what's important. Build streaks, track your progress, and stay motivated with our beautiful, distraction-free interface.",
         "url": "{{ request.url_root }}",
         "applicationCategory": "ProductivityApplication",
@@ -80,24 +80,37 @@
 </head>
 
 <body>
+<nav class="navbar">
+    <a class="logo" href="/">
+        <img src="{{ url_for('static', filename='favicon.png') }}" alt="YAJORA Logo" class="logo-img">
+        YAJORA
+    </a>
+    <ul class="nav-links">
+        <li><a href="#what">WHAT</a></li>
+        <li><a href="#why">WHY</a></li>
+        <li><a href="#how">HOW</a></li>
+    </ul>
+    <a class="login-btn" href="/login">Login</a>
+</nav>
     <div class="container">
         <!-- Hero Section -->
-        <header class="landing-hero">
+        <header id="what" class="landing-hero">
             <h1 class="hero-title">YAJORA</h1> <br>
-            <p class="hero-subtitle">Minimalist Task & Habit Tracker</p>
-            <p class="hero-description">
-                Focus on what truly matters. Build lasting habits, track your progress,
-                and stay motivated with our beautifully simple, distraction-free interface.
-            </p>
+            <p class="hero-subtitle">Build Your Wall Brick By Brick</p>
+            
+
+            <div class="hero-video-container">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/Yt2jt-j7cn8" title="The Story of YAJORA: The Wall, Will Smith Brick by Brick" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
 
             <div class="hero-actions">
-                <a href="/login" class="btn-primary">Get Started</a>
-                <a href="#features" class="btn-secondary">Learn More</a>
+                <a href="/signup" class="btn-primary">Get Started</a>
+                <a href="#why" class="btn-secondary">Learn More</a>
             </div>
         </header>
 
         <!-- Features Section -->
-        <section id="features" class="features-section">
+        <section id="why" class="features-section">
             <h2 class="section-title">Why Choose YAJORA?</h2>
 
             <div class="features-grid">
@@ -164,17 +177,48 @@
                 </div>
             </div>
         </section>
-
+        
+        <!-- How Section -->
+        <section id="how" class="how-section">
+            <h2 class="section-title">How It Works</h2>
+        
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon icon-signup"></div>
+                    <h3>1. Sign Up & Get Started</h3>
+                    <p>Create your account in seconds and access your personal dashboard designed for simplicity and focus.</p>
+                </div>
+        
+                <div class="feature-card">
+                    <div class="feature-icon icon-add"></div>
+                    <h3>2. Add Your Tasks & Habits</h3>
+                    <p>Quickly input your daily tasks and habits. Set goals, categories, and repetition schedules with ease.</p>
+                </div>
+        
+                <div class="feature-card">
+                    <div class="feature-icon icon-track"></div>
+                    <h3>3. Track Your Progress</h3>
+                    <p>Mark tasks as complete, build streaks, and view analytics to see your productivity trends over time.</p>
+                </div>
+        
+                <div class="feature-card">
+                    <div class="feature-icon icon-motivate"></div>
+                    <h3>4. Stay Motivated</h3>
+                    <p>Receive insights and visualizations that keep you inspired to maintain consistency and achieve your goals.</p>
+                </div>
+            </div>
+        </section>
+        
         <!-- CTA Section -->
         <section class="cta-section">
             <h2>Ready to Focus on What Matters?</h2>
-            <p>Join thousands of users who have transformed their productivity with THE ONE V3.</p>
-            <a href="/login" class="btn-primary btn-large">Start Your Journey</a>
+            <p>Join thousands of users who have transformed their productivity with YAJORA</p>
+            <a href="/signup" class="btn-primary btn-large">Start Your Journey</a>
         </section>
 
         <!-- Footer -->
         <footer class="landing-footer">
-            <p>&copy; 2025 THE ONE V3. Crafted with care for focused minds.</p>
+            <p>&copy; 2025 YAJORA. Crafted with care for focused minds.</p>
         </footer>
     </div>
 </body>

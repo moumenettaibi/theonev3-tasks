@@ -569,9 +569,108 @@ body:has(.landing-hero) .container {
     max-width: 1000px;
 }
 
+/* Navigation Bar */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    background-color: var(--card-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    height: 60px;
+    box-shadow: var(--shadow-light);
+}
+
+.logo {
+    position: absolute;
+    left: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-text-color);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.logo:hover {
+    color: var(--accent-color);
+}
+
+.logo-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 2rem;
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: var(--primary-text-color);
+    font-weight: 500;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+    position: relative;
+}
+
+.nav-links li a:hover {
+    color: var(--accent-color);
+}
+
+.nav-links li a::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-color);
+    transition: width 0.3s ease;
+}
+
+.nav-links li a:hover::after {
+    width: 100%;
+}
+
+.login-btn {
+    position: absolute;
+    right: 2rem;
+    padding: 0.5rem 1.5rem;
+    background-color: var(--accent-color);
+    color: var(--accent-color-inverted);
+    border-radius: var(--border-radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.login-btn:hover {
+    background-color: var(--secondary-text-color);
+    transform: translateY(-1px);
+}
+
+/* Adjust hero padding for fixed nav on landing page */
+.landing-hero {
+    padding-top: 100px;
+}
+
 .landing-hero,
 .features-section,
 .benefits-section,
+.how-section,
 .cta-section {
     text-align: center;
     padding: 4rem 1rem;
@@ -605,6 +704,28 @@ body:has(.landing-hero) .container {
     justify-content: center;
     gap: 1rem;
     flex-wrap: wrap;
+}
+
+.hero-video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    max-width: 100%;
+    width: 100%;
+    margin: 2rem auto;
+    background: #000;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-heavy);
+}
+
+.hero-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 /* Landing Page Buttons */
@@ -670,6 +791,10 @@ body:has(.landing-hero) .container {
     box-shadow: var(--shadow-light);
     text-align: left;
     transition: var(--transition-fast);
+}
+
+.how-section .feature-card {
+    text-align: center;
 }
 
 .feature-card:hover {
