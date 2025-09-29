@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Socket.IO client library -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- Confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
 </head>
@@ -205,18 +207,90 @@
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
-        socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } });
+        socket.on('tasks_updated', (updatedTasks) => {
+            console.log('Received real-time task update from server.');
+            // Client-side guard to prevent re-render if data is identical
+            if (JSON.stringify(tasks) === JSON.stringify(updatedTasks)) {
+                console.log('Skipping re-render as tasks are identical.');
+                return;
+            }
+            tasks = updatedTasks;
+            if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') {
+                renderTasks();
+                updateProgressBar();
+            }
+        });
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
         async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 200); }
         async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); const result = await response.json(); if (response.ok) { window.location.href = result.redirect || '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
-        function showTasksView() { document.body.classList.remove('analytics-active'); tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
-        function showAnalyticsView() { document.body.classList.add('analytics-active'); tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
+        function showTasksView() {
+            if (analyticsContainer.style.display === 'none' && !document.body.classList.contains('analytics-active')) {
+                 // Initial load or already on tasks view
+                document.body.classList.remove('analytics-active');
+                tasksContainer.style.display = 'block';
+                analyticsContainer.style.display = 'none';
+                dateNav.style.visibility = 'visible';
+                progressContainer.style.display = 'block';
+                addTaskBtn.style.display = 'flex';
+                headerTitle.textContent = 'Tasks';
+                updateView();
+                return;
+            }
+
+            // Transition from Analytics to Tasks
+            document.body.classList.remove('analytics-active');
+            analyticsContainer.classList.remove('animating-in');
+            analyticsContainer.classList.add('animating-out');
+
+            setTimeout(() => {
+                analyticsContainer.style.display = 'none';
+                analyticsContainer.classList.remove('animating-out');
+
+                tasksContainer.style.display = 'block';
+                tasksContainer.classList.add('animating-in');
+                dateNav.style.visibility = 'visible';
+                progressContainer.style.display = 'block';
+                addTaskBtn.style.display = 'flex';
+                headerTitle.textContent = 'Tasks';
+                updateView();
+                setTimeout(() => tasksContainer.classList.remove('animating-in'), 300);
+            }, 300);
+        }
+
+        function showAnalyticsView() {
+            if (tasksContainer.style.display === 'none') return;
+
+            document.body.classList.add('analytics-active');
+            tasksContainer.classList.remove('animating-in');
+            tasksContainer.classList.add('animating-out');
+
+            setTimeout(() => {
+                tasksContainer.style.display = 'none';
+                tasksContainer.classList.remove('animating-out');
+
+                analyticsContainer.style.display = 'block';
+                analyticsContainer.classList.add('animating-in');
+                dateNav.style.visibility = 'hidden';
+                progressContainer.style.display = 'none';
+                addTaskBtn.style.display = 'none';
+                headerTitle.textContent = 'Analytics';
+                renderAnalytics();
+                setTimeout(() => analyticsContainer.classList.remove('animating-in'), 300);
+            }, 300);
+        }
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
-            document.getElementById('currentStreakStat').textContent = analytics.currentStreak;
+            const currentStreakEl = document.getElementById('currentStreakStat');
+            if (currentStreakEl.textContent !== analytics.currentStreak.toString()) {
+                currentStreakEl.textContent = analytics.currentStreak;
+                currentStreakEl.classList.add('animate-pop');
+                currentStreakEl.addEventListener('animationend', () => {
+                    currentStreakEl.classList.remove('animate-pop');
+                }, { once: true });
+            }
             document.getElementById('bestStreakStat').textContent = analytics.bestStreak;
             document.getElementById('weeklyCompletionStat').textContent = analytics.weeklyCompletion + '%';
             document.getElementById('consistencyScoreStat').textContent = analytics.consistencyScore + '%';
@@ -331,8 +405,111 @@
         function getDateInfo(date) { const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']; const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const dayOfWeek = days[date.getDay()]; const day = date.getDate(); const month = months[date.getMonth()]; const year = date.getFullYear(); const today = new Date(); today.setHours(0, 0, 0, 0); const compareDate = new Date(date); compareDate.setHours(0, 0, 0, 0); const isToday = compareDate.getTime() === today.getTime(); let formattedDate = `${dayOfWeek}, ${month} ${day}`; if (!isToday) { formattedDate += `, ${year}`; } else { formattedDate += " (Today)"; } const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`; return { dayOfWeek, dateString, formatted: formattedDate, isToday }; }
         function updateProgressBar() { const dateInfo = getDateInfo(currentDisplayDate); const tasksForDay = getTasksForDate(currentDisplayDate); if (tasksForDay.length === 0) { progressContainer.style.display = 'none'; return; } progressContainer.style.display = 'block'; const completedTasks = tasksForDay.filter(task => task.completedOn[dateInfo.dateString] === true); const percentage = tasksForDay.length > 0 ? Math.round((completedTasks.length / tasksForDay.length) * 100) : 0; progressBarInner.style.width = `${percentage}%`; progressText.textContent = `${percentage}% Complete`; progressBarInner.className = 'progress-bar-inner'; if (percentage === 100) progressBarInner.classList.add('color-green'); else if (percentage >= 75) progressBarInner.classList.add('color-light-green'); else if (percentage >= 50) progressBarInner.classList.add('color-yellow'); else if (percentage >= 25) progressBarInner.classList.add('color-orange'); else if (percentage > 0) progressBarInner.classList.add('color-red'); }
         function findMostRecentPreviousDueDate(task, currentDate) { let checkDate = new Date(currentDate); checkDate.setDate(checkDate.getDate() - 1); for (let i = 0; i < 365; i++) { const { dayOfWeek } = getDateInfo(checkDate); if (task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek)) return checkDate; checkDate.setDate(checkDate.getDate() - 1); } return null; }
-        function renderTasks() { const dateInfo = getDateInfo(currentDisplayDate); taskList.innerHTML = ''; const groupedTasks = {}; const tasksForDay = getTasksForDate(currentDisplayDate); if (tasksForDay.length === 0) { taskList.innerHTML = '<p style="text-align:center; color:#888; margin-top:2rem;">No tasks for this day.</p>'; return; } tasksForDay.forEach(task => { const group = task.group || 'Ungrouped'; if (!groupedTasks[group]) groupedTasks[group] = []; groupedTasks[group].push(task); }); Object.keys(groupedTasks).sort((a, b) => a === 'Ungrouped' ? 1 : b === 'Ungrouped' ? -1 : a.localeCompare(b)).forEach(group => { const groupHeader = document.createElement('li'); groupHeader.className = 'group-header'; groupHeader.textContent = group; if (group !== 'Ungrouped') { groupHeader.classList.add('deletable'); groupHeader.dataset.group = group; } taskList.appendChild(groupHeader); groupedTasks[group].forEach(task => { const isCompletedToday = task.completedOn[dateInfo.dateString] === true; const li = document.createElement('li'); li.className = 'task-item'; if (isCompletedToday) li.classList.add('completed'); li.dataset.taskId = task.id; if (dateInfo.isToday && !isCompletedToday) { const previousDueDate = findMostRecentPreviousDueDate(task, currentDisplayDate); if (previousDueDate) { const { dateString: prevDateString } = getDateInfo(previousDueDate); if (task.completedOn[prevDateString] !== true) li.classList.add('missed-yesterday'); } } let habitHTML = ''; if (task.habitTracker) { const { completedDates, goal } = task.habitTracker; const count = completedDates.length; if (count >= 90) { habitHTML = `<span class="habit-formed">✔️ Habit Formed</span>`; } else { habitHTML = `<span class="habit-tracker" data-task-id="${task.id}">${count}/${goal}</span>`; } } li.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">${habitHTML}</div>`; li.querySelector('.task-checkbox').addEventListener('change', e => { e.stopPropagation(); toggleTaskCompletion(task.id, dateInfo.dateString); }); li.addEventListener('click', e => { if (e.target.type !== 'checkbox' && !e.target.classList.contains('habit-tracker')) openEditModal(task); }); taskList.appendChild(li); }); }); }
-        function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; task.completedOn[dateString] = task.completedOn[dateString] !== true; if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const { completedDates, goal } = task.habitTracker; if (isCompletedNow && completedDates.length === goal) { if (goal === 21) task.habitTracker.goal = 45; else if (goal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
+        function renderTasks() {
+            const dateInfo = getDateInfo(currentDisplayDate);
+            taskList.innerHTML = '';
+            const groupedTasks = {};
+            const tasksForDay = getTasksForDate(currentDisplayDate);
+
+            if (tasksForDay.length === 0) {
+                taskList.innerHTML = '<p style="text-align:center; color:#888; margin-top:2rem;">No tasks for this day.</p>';
+                return;
+            }
+
+            tasksForDay.forEach(task => {
+                const group = task.group || 'Ungrouped';
+                if (!groupedTasks[group]) groupedTasks[group] = [];
+                groupedTasks[group].push(task);
+            });
+
+            Object.keys(groupedTasks).sort((a, b) => a === 'Ungrouped' ? 1 : b === 'Ungrouped' ? -1 : a.localeCompare(b)).forEach(group => {
+                const groupHeader = document.createElement('li');
+                groupHeader.className = 'group-header';
+                groupHeader.textContent = group;
+                if (group !== 'Ungrouped') {
+                    groupHeader.classList.add('deletable');
+                    groupHeader.dataset.group = group;
+                }
+                taskList.appendChild(groupHeader);
+
+                groupedTasks[group].forEach(task => {
+                    const isCompletedToday = task.completedOn[dateInfo.dateString] === true;
+                    const li = document.createElement('li');
+                    li.className = 'task-item';
+                    if (isCompletedToday) li.classList.add('completed');
+                    li.dataset.taskId = task.id;
+
+                    if (dateInfo.isToday && !isCompletedToday) {
+                        const previousDueDate = findMostRecentPreviousDueDate(task, currentDisplayDate);
+                        if (previousDueDate) {
+                            const { dateString: prevDateString } = getDateInfo(previousDueDate);
+                            if (task.completedOn[prevDateString] !== true) li.classList.add('missed-yesterday');
+                        }
+                    }
+
+                    let habitHTML = '';
+                    if (task.habitTracker) {
+                        const { completedDates, goal } = task.habitTracker;
+                        const count = completedDates.length;
+                        if (count >= 90) {
+                            habitHTML = `<span class="habit-formed">✔️ Habit Formed</span>`;
+                        } else {
+                            habitHTML = `<span class="habit-tracker" data-task-id="${task.id}">${count}/${goal}</span>`;
+                        }
+                    }
+
+                    li.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">${habitHTML}</div>`;
+                    const checkbox = li.querySelector('.task-checkbox');
+                    checkbox.addEventListener('change', e => {
+                        e.stopPropagation();
+                        toggleTaskCompletion(task.id, dateInfo.dateString, checkbox);
+                    });
+                    li.addEventListener('click', e => {
+                        if (e.target.type !== 'checkbox' && !e.target.classList.contains('habit-tracker')) openEditModal(task);
+                    });
+                    taskList.appendChild(li);
+                });
+            });
+        }
+        function toggleTaskCompletion(taskId, dateString, checkbox) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const isCompletedNow = !task.completedOn[dateString];
+            task.completedOn[dateString] = isCompletedNow;
+
+            if (isCompletedNow) {
+                const rect = checkbox.getBoundingClientRect();
+                const origin = {
+                    x: (rect.left + rect.right) / 2 / window.innerWidth,
+                    y: (rect.top + rect.bottom) / 2 / window.innerHeight
+                };
+                confetti({
+                    particleCount: 50,
+                    spread: 40,
+                    origin: origin,
+                    colors: ['#FFC700', '#FF8F00', '#FF5722', '#E65100']
+                });
+            }
+
+            if (task.habitTracker) {
+                const dateIndex = task.habitTracker.completedDates.indexOf(dateString);
+                if (isCompletedNow && dateIndex === -1) {
+                    task.habitTracker.completedDates.push(dateString);
+                } else if (!isCompletedNow && dateIndex > -1) {
+                    task.habitTracker.completedDates.splice(dateIndex, 1);
+                }
+                const { completedDates, goal } = task.habitTracker;
+                if (isCompletedNow && completedDates.length === goal) {
+                    if (goal === 21) task.habitTracker.goal = 45;
+                    else if (goal === 45) task.habitTracker.goal = 90;
+                }
+            }
+
+            syncTasksToServer();
+            renderTasks();
+            updateProgressBar();
+        }
         function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
         function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(t => t.group).filter(Boolean))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
         function openTaskModal() { taskModal.style.display = 'flex'; taskInput.focus(); populateGroupDropdown(); }
