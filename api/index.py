@@ -10,7 +10,7 @@ from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
 from datetime import timedelta  # --- MODIFIED: Imported timedelta
 
-from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
+from flask import Flask, render_template, request, jsonify, session, send_from_directory # --- MODIFIED: Imported session and send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -218,6 +218,10 @@ def logout():
     return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'})
 
 # --- Main Application Routes ---
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory(os.path.join(app.root_path, '..', 'static'), 'manifest.json')
+
 @app.route('/')
 def home():
     if current_user.is_authenticated:
