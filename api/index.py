@@ -97,13 +97,15 @@ def load_user(user_id):
 def read_user_tasks():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker FROM tasks WHERE user_id = %s;", (current_user.id,))
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, project_id FROM tasks WHERE user_id = %s;", (current_user.id,))
             tasks = cur.fetchall()
             
     for task in tasks:
         task['id'] = str(task['id'])
         task['completedOn'] = task.pop('completed_on')
         task['habitTracker'] = task.pop('habit_tracker')
+        if task['project_id']:
+            task['project_id'] = str(task['project_id'])
     return tasks
 
 def write_user_tasks(tasks):
@@ -120,7 +122,8 @@ def write_user_tasks(tasks):
                         task.get('group'),
                         json.dumps(task['recurrence']),
                         json.dumps(task['completedOn']),
-                        json.dumps(task['habitTracker'])
+                        json.dumps(task['habitTracker']),
+                        task.get('project_id') or None
                     )
                     for task in tasks
                 ]
@@ -128,7 +131,7 @@ def write_user_tasks(tasks):
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, project_id)
                     VALUES %s
                     """,
                     task_values
@@ -222,7 +225,8 @@ def logout():
 def home():
     if current_user.is_authenticated:
         tasks_data = read_user_tasks()
-        return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+        projects_data = read_user_projects()
+        return render_template('index.html', username=current_user.username, initial_tasks=tasks_data, initial_projects=projects_data)
     else:
         return render_template('landing.html')
 
@@ -232,7 +236,8 @@ def home():
 @login_required
 def app_dashboard():
     tasks_data = read_user_tasks()
-    return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+    projects_data = read_user_projects()
+    return render_template('index.html', username=current_user.username, initial_tasks=tasks_data, initial_projects=projects_data)
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
 @login_required
@@ -249,6 +254,113 @@ def handle_tasks():
         write_user_tasks(new_tasks)
         socketio.emit('tasks_updated', new_tasks, to=current_user.id)
         return jsonify({'success': True, 'message': 'Tasks saved and synced.'})
+
+# --- Project API Routes ---
+def read_user_projects():
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM projects WHERE user_id = %s ORDER BY created_at DESC;", (current_user.id,))
+            projects = cur.fetchall()
+
+    for project in projects:
+        project['id'] = str(project['id'])
+        if project['deadline']:
+            project['deadline'] = project['deadline'].isoformat()
+    return projects
+
+@app.route('/api/projects', methods=['GET', 'POST'])
+@login_required
+def handle_projects():
+    if request.method == 'GET':
+        projects = read_user_projects()
+        return jsonify(projects)
+
+    if request.method == 'POST':
+        data = request.get_json()
+        new_project_id = str(uuid.uuid4())
+
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO projects (id, user_id, title, description, deadline, priority, category)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING *;
+                    """,
+                    (
+                        new_project_id,
+                        current_user.id,
+                        data['title'],
+                        data.get('description'),
+                        data.get('deadline') or None,
+                        data.get('priority', 'medium'),
+                        data.get('category')
+                    )
+                )
+                new_project = cur.fetchone()
+            conn.commit()
+
+        new_project['id'] = str(new_project['id'])
+        if new_project['deadline']:
+            new_project['deadline'] = new_project['deadline'].isoformat()
+
+        # Emit an event to all clients for this user
+        socketio.emit('project_created', new_project, to=current_user.id)
+
+        return jsonify(new_project), 201
+
+@app.route('/api/projects/<uuid:project_id>', methods=['PUT', 'DELETE'])
+@login_required
+def handle_single_project(project_id):
+    project_id_str = str(project_id)
+    if request.method == 'PUT':
+        data = request.get_json()
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # First, verify the project belongs to the user
+                cur.execute("SELECT id FROM projects WHERE id = %s AND user_id = %s;", (project_id_str, current_user.id))
+                if cur.fetchone() is None:
+                    return jsonify({'error': 'Project not found or access denied'}), 404
+
+                cur.execute(
+                    """
+                    UPDATE projects
+                    SET title = %s, description = %s, deadline = %s, priority = %s, category = %s, status = %s, updated_at = NOW()
+                    WHERE id = %s AND user_id = %s
+                    RETURNING *;
+                    """,
+                    (
+                        data.get('title'),
+                        data.get('description'),
+                        data.get('deadline') or None,
+                        data.get('priority'),
+                        data.get('category'),
+                        data.get('status'),
+                        project_id_str,
+                        current_user.id
+                    )
+                )
+                updated_project = cur.fetchone()
+            conn.commit()
+
+        updated_project['id'] = str(updated_project['id'])
+        if updated_project['deadline']:
+            updated_project['deadline'] = updated_project['deadline'].isoformat()
+
+        socketio.emit('project_updated', updated_project, to=current_user.id)
+        return jsonify(updated_project)
+
+    if request.method == 'DELETE':
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Verify ownership and delete
+                cur.execute("DELETE FROM projects WHERE id = %s AND user_id = %s RETURNING id;", (project_id_str, current_user.id))
+                if cur.fetchone() is None:
+                    return jsonify({'error': 'Project not found or access denied'}), 404
+            conn.commit()
+
+        socketio.emit('project_deleted', {'id': project_id_str}, to=current_user.id)
+        return jsonify({'success': True, 'message': 'Project deleted successfully.'})
 
 # --- WebSocket Event Handlers ---
 @socketio.on('connect')

@@ -15,13 +15,17 @@
 </head>
 
 <body class="">
-    <!-- Data div for initial tasks -->
-    <div id="initial-data" data-tasks='{{ initial_tasks | tojson }}' style="display: none;"></div>
+    <!-- Data div for initial data -->
+    <div id="initial-data"
+         data-tasks='{{ initial_tasks | tojson }}'
+         data-projects='{{ initial_projects | tojson }}'
+         style="display: none;"></div>
 
     <div class="container">
         <header>
             <div class="header-top">
-                <h1></h1>
+                <h1 id="tasks-title" class="active">Tasks</h1>
+                <h1 id="projects-title">Projects</h1>
             </div>
             <div class="date-nav">
                 <span class="nav-arrow" id="prevDayBtn">‹</span>
@@ -38,6 +42,14 @@
 
         <div id="tasksContainer">
             <ul class="task-list" id="taskList"></ul>
+        </div>
+
+        <div id="projectsContainer" style="display: none;">
+            <!-- This will be populated by renderProjects() -->
+        </div>
+
+        <div id="projectDetailContainer" style="display: none;">
+            <!-- This will be populated by renderProjectDetail() -->
         </div>
 
         <div id="analyticsContainer" style="display: none;">
@@ -163,7 +175,11 @@
     <!-- Modals and Inputs -->
     <input type="file" id="importFileInput" style="display: none;" accept="application/json">
     <div class="modal" id="taskModal">
-        <div class="modal-content"><input type="text" id="taskInput" placeholder="Enter task"><select id="groupSelect"></select><input type="text" id="newGroupInput" placeholder="Enter new group name" style="display: none;">
+        <div class="modal-content">
+            <input type="text" id="taskInput" placeholder="Enter task">
+            <select id="projectSelect" style="margin-top: 1rem;"></select>
+            <select id="groupSelect" style="margin-top: 1rem;"></select>
+            <input type="text" id="newGroupInput" placeholder="Enter new group name" style="display: none; margin-top: 1rem;">
             <div class="days-selection" id="daysSelection"><button class="day-btn" data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button></div>
             <div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div>
         </div>
@@ -192,28 +208,172 @@
         </div>
     </div>
 
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <h3 style="font-weight: 600; margin-bottom: 1.5rem;">New Project</h3>
+            <input type="text" id="projectTitleInput" placeholder="Project Title">
+            <textarea id="projectDescriptionInput" placeholder="Project Description" rows="3"></textarea>
+            <div class="project-meta-grid">
+                <div>
+                    <label for="projectDeadlineInput">Deadline</label>
+                    <input type="date" id="projectDeadlineInput">
+                </div>
+                <div>
+                    <label for="projectPrioritySelect">Priority</label>
+                    <select id="projectPrioritySelect">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <label for="projectCategoryInput" style="margin-top: 1rem;">Category</label>
+            <input type="text" id="projectCategoryInput" placeholder="e.g., Work, Personal">
+            <div class="modal-actions">
+                <button class="btn-danger" id="deleteProjectBtn" style="display: none;">Delete Project</button>
+                <button id="cancelProjectBtn">Cancel</button>
+                <button id="saveProjectBtn">Save Project</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // DOM Elements
-        const headerTitle = document.querySelector('.header-top h1'); const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage'); const categoryModal = document.getElementById('categoryModal'); const categoryInput = document.getElementById('categoryInput'); const cancelCategoryBtn = document.getElementById('cancelCategoryBtn'); const deleteCategoryBtn = document.getElementById('deleteCategoryBtn'); const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-        const progressContainer = document.getElementById('progressContainer'); const progressBarInner = document.getElementById('progressBarInner'); const progressText = document.getElementById('progressText');
+        const tasksTitle = document.getElementById('tasks-title');
+        const projectsTitle = document.getElementById('projects-title');
+        const tasksContainer = document.getElementById('tasksContainer');
+        const projectsContainer = document.getElementById('projectsContainer');
+        const projectDetailContainer = document.getElementById('projectDetailContainer');
+        const analyticsContainer = document.getElementById('analyticsContainer');
+        const taskList = document.getElementById('taskList');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const dateNav = document.querySelector('.date-nav');
+        const currentDateElement = document.getElementById('currentDate');
+        const prevDayBtn = document.getElementById('prevDayBtn');
+        const nextDayBtn = document.getElementById('nextDayBtn');
+
+        // Task Modal Elements
+        const taskModal = document.getElementById('taskModal');
+        const taskInput = document.getElementById('taskInput');
+        const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const daysSelection = document.getElementById('daysSelection');
+        const groupSelect = document.getElementById('groupSelect');
+        const newGroupInput = document.getElementById('newGroupInput');
+        const projectSelect = document.getElementById('projectSelect');
+
+        // Project Modal Elements
+        const projectModal = document.getElementById('projectModal');
+        const projectTitleInput = document.getElementById('projectTitleInput');
+        const projectDescriptionInput = document.getElementById('projectDescriptionInput');
+        const projectDeadlineInput = document.getElementById('projectDeadlineInput');
+        const projectPrioritySelect = document.getElementById('projectPrioritySelect');
+        const projectCategoryInput = document.getElementById('projectCategoryInput');
+        const saveProjectBtn = document.getElementById('saveProjectBtn');
+        const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+        const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+
+        const deleteGroupModal = document.getElementById('deleteGroupModal');
+        const deleteGroupModalText = document.getElementById('deleteGroupModalText');
+        const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn');
+        const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn');
+        const importBtn = document.getElementById('importBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const importFileInput = document.getElementById('importFileInput');
+        const habitGoalModal = document.getElementById('habitGoalModal');
+        const habitInfoText = document.getElementById('habitInfoText');
+        const habitGoalInput = document.getElementById('habitGoalInput');
+        const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn');
+        const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const categoryModal = document.getElementById('categoryModal');
+        const categoryInput = document.getElementById('categoryInput');
+        const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+        const deleteCategoryBtn = document.getElementById('deleteCategoryBtn');
+        const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBarInner = document.getElementById('progressBarInner');
+        const progressText = document.getElementById('progressText');
 
         // State
         const initialDataEl = document.getElementById('initial-data');
         let tasks = JSON.parse(initialDataEl.dataset.tasks);
-        let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null;
+        let projects = JSON.parse(initialDataEl.dataset.projects);
+        let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null; let editingProjectId = null;
 
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
         socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } });
+
+        socket.on('project_created', (newProject) => {
+            console.log('Received real-time project creation from server.');
+            projects.unshift(newProject);
+            if (projectsContainer.style.display === 'block') renderProjects();
+        });
+
+        socket.on('project_updated', (updatedProject) => {
+            console.log('Received real-time project update from server.');
+            const index = projects.findIndex(p => p.id === updatedProject.id);
+            if (index !== -1) {
+                projects[index] = updatedProject;
+                if (projectsContainer.style.display === 'block') renderProjects();
+            }
+        });
+
+        socket.on('project_deleted', (data) => {
+            console.log('Received real-time project deletion from server.');
+            projects = projects.filter(p => p.id !== data.id);
+            if (projectsContainer.style.display === 'block') renderProjects();
+        });
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
         async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 200); }
         async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); const result = await response.json(); if (response.ok) { window.location.href = result.redirect || '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
-        function showTasksView() { document.body.classList.remove('analytics-active'); tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
-        function showAnalyticsView() { document.body.classList.add('analytics-active'); tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
+        function showTasksView() {
+            document.body.classList.remove('analytics-active');
+            tasksContainer.style.display = 'block';
+            projectsContainer.style.display = 'none';
+            projectDetailContainer.style.display = 'none';
+            analyticsContainer.style.display = 'none';
+            dateNav.style.visibility = 'visible';
+            progressContainer.style.display = 'block';
+            addTaskBtn.style.display = 'flex';
+            tasksTitle.classList.add('active');
+            projectsTitle.classList.remove('active');
+            updateView();
+        }
+
+        function showProjectsView() {
+            document.body.classList.remove('analytics-active');
+            tasksContainer.style.display = 'none';
+            projectsContainer.style.display = 'block';
+            projectDetailContainer.style.display = 'none';
+            analyticsContainer.style.display = 'none';
+            dateNav.style.visibility = 'hidden';
+            progressContainer.style.display = 'none';
+            addTaskBtn.style.display = 'flex';
+            tasksTitle.classList.remove('active');
+            projectsTitle.classList.add('active');
+            renderProjects();
+        }
+
+        function showAnalyticsView() {
+            document.body.classList.add('analytics-active');
+            tasksContainer.style.display = 'none';
+            projectsContainer.style.display = 'none';
+            projectDetailContainer.style.display = 'none';
+            analyticsContainer.style.display = 'block';
+            dateNav.style.visibility = 'hidden';
+            progressContainer.style.display = 'none';
+            addTaskBtn.style.display = 'none';
+            renderAnalytics();
+        }
+
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
             document.getElementById('currentStreakStat').textContent = analytics.currentStreak;
@@ -335,13 +495,70 @@
         function toggleTaskCompletion(taskId, dateString) { const task = tasks.find(t => t.id === taskId); if (!task) return; task.completedOn[dateString] = task.completedOn[dateString] !== true; if (task.habitTracker) { const isCompletedNow = task.completedOn[dateString]; const dateIndex = task.habitTracker.completedDates.indexOf(dateString); if (isCompletedNow && dateIndex === -1) { task.habitTracker.completedDates.push(dateString); } else if (!isCompletedNow && dateIndex > -1) { task.habitTracker.completedDates.splice(dateIndex, 1); } const { completedDates, goal } = task.habitTracker; if (isCompletedNow && completedDates.length === goal) { if (goal === 21) task.habitTracker.goal = 45; else if (goal === 45) task.habitTracker.goal = 90; } } syncTasksToServer(); renderTasks(); updateProgressBar(); }
         function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
         function populateGroupDropdown() { const existingGroups = [...new Set(tasks.map(t => t.group).filter(Boolean))]; groupSelect.innerHTML = '<option value="">Ungrouped</option>'; existingGroups.sort().forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}</option>` }); groupSelect.innerHTML += '<option value="--add-new--">Create New Group...</option>'; }
-        function openTaskModal() { taskModal.style.display = 'flex'; taskInput.focus(); populateGroupDropdown(); }
-        function closeTaskModal() { taskModal.style.display = 'none'; taskInput.value = ''; editingTaskId = null; deleteBtn.style.display = 'none'; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); newGroupInput.style.display = 'none'; newGroupInput.value = ''; groupSelect.value = ''; }
-        function openEditModal(task) { editingTaskId = task.id; taskInput.value = task.text; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day))); deleteBtn.style.display = 'inline-block'; openTaskModal(); groupSelect.value = task.group || ''; }
+
+        function populateProjectDropdown() {
+            projectSelect.innerHTML = '<option value="">No Project</option>';
+            projects.forEach(project => {
+                projectSelect.innerHTML += `<option value="${project.id}">${project.title}</option>`;
+            });
+        }
+
+        function openTaskModal() {
+            taskModal.style.display = 'flex';
+            taskInput.focus();
+            populateGroupDropdown();
+            populateProjectDropdown();
+        }
+
+        function closeTaskModal() { taskModal.style.display = 'none'; taskInput.value = ''; editingTaskId = null; deleteBtn.style.display = 'none'; document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected')); newGroupInput.style.display = 'none'; newGroupInput.value = ''; groupSelect.value = ''; projectSelect.value = ''; }
+
+        function openEditModal(task) {
+            editingTaskId = task.id;
+            taskInput.value = task.text;
+            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day)));
+            deleteBtn.style.display = 'inline-block';
+            openTaskModal(); // This now also calls populateProjectDropdown
+            groupSelect.value = task.group || '';
+            projectSelect.value = task.project_id || '';
+        }
+
         function openHabitGoalModal(taskId) { editingHabitTaskId = taskId; const task = tasks.find(t => t.id === taskId); if (!task) return; habitGoalInput.value = task.habitTracker.goal; habitInfoText.textContent = `Current progress for "${task.text}" is ${task.habitTracker.completedDates.length} days.`; habitGoalModal.style.display = 'flex'; habitGoalInput.focus(); }
         function closeHabitGoalModal() { habitGoalModal.style.display = 'none'; habitGoalInput.value = ''; editingHabitTaskId = null; }
         function saveHabitGoal() { const task = tasks.find(t => t.id === editingHabitTaskId); if (!task) return; const newGoal = parseInt(habitGoalInput.value, 10); const currentCount = task.habitTracker.completedDates.length; if (isNaN(newGoal) || newGoal <= 0 || newGoal < currentCount) { alert("Please enter a valid goal that is greater than or equal to your current progress."); return; } task.habitTracker.goal = newGoal; syncTasksToServer(); closeHabitGoalModal(); updateView(); }
-        function saveTask() { const text = taskInput.value.trim(); const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day); if (!text || selectedDays.length === 0) { alert('Task text and at least one day are required.'); return; } let group = (groupSelect.value === '--add-new--') ? newGroupInput.value.trim() || null : groupSelect.value || null; if (editingTaskId) { const task = tasks.find(t => t.id === editingTaskId); if (task) { task.text = text; task.group = group; task.recurrence = selectedDays; } } else { tasks.push({ id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } }); } syncTasksToServer(); closeTaskModal(); updateView(); }
+
+        function saveTask() {
+            const text = taskInput.value.trim();
+            const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day);
+            if (!text || selectedDays.length === 0) {
+                alert('Task text and at least one day are required.');
+                return;
+            }
+            let group = (groupSelect.value === '--add-new--') ? newGroupInput.value.trim() || null : groupSelect.value || null;
+            let projectId = projectSelect.value || null;
+
+            if (editingTaskId) {
+                const task = tasks.find(t => t.id === editingTaskId);
+                if (task) {
+                    task.text = text;
+                    task.group = group;
+                    task.recurrence = selectedDays;
+                    task.project_id = projectId;
+                }
+            } else {
+                tasks.push({
+                    id: generateUUID(),
+                    text,
+                    group,
+                    recurrence: selectedDays,
+                    completedOn: {},
+                    habitTracker: { goal: 21, completedDates: [] },
+                    project_id: projectId
+                });
+            }
+            syncTasksToServer();
+            closeTaskModal();
+            updateView();
+        }
         function deleteTask() { if (editingTaskId) { tasks = tasks.filter(t => t.id !== editingTaskId); syncTasksToServer(); closeTaskModal(); updateView(); } }
         function _deleteGroup(groupName) { console.log('Deleting group:', groupName); tasks.forEach(task => { if (task.group === groupName) { task.group = null; console.log('Moved task to ungrouped:', task.id); } }); syncTasksToServer(); updateView(); }
         function openCategoryModal(groupName) { editingGroup = groupName; categoryInput.value = groupName; categoryModal.style.display = 'flex'; categoryInput.focus(); }
@@ -351,8 +568,226 @@
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
         function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
         function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
-        headerTitle.addEventListener('click', () => (tasksContainer.style.display !== 'none' ? showAnalyticsView() : showTasksView()));
-        addTaskBtn.addEventListener('click', () => { editingTaskId = null; taskInput.value = ''; deleteBtn.style.display = 'none'; openTaskModal(); });
+
+        tasksTitle.addEventListener('click', () => {
+            if (analyticsContainer.style.display !== 'none') {
+                showTasksView();
+            } else {
+                showAnalyticsView();
+            }
+        });
+        projectsTitle.addEventListener('click', showProjectsView);
+
+        addTaskBtn.addEventListener('click', () => {
+            if (projectsContainer.style.display === 'block') {
+                openProjectModal();
+            } else {
+                editingTaskId = null;
+                taskInput.value = '';
+                deleteBtn.style.display = 'none';
+                openTaskModal();
+            }
+        });
+
+        // --- Project Modal Logic ---
+        function openProjectModal(project = null) {
+            editingProjectId = project ? project.id : null;
+
+            projectTitleInput.value = project ? project.title : '';
+            projectDescriptionInput.value = project ? project.description : '';
+            projectDeadlineInput.value = project ? (project.deadline ? project.deadline.split('T')[0] : '') : '';
+            projectPrioritySelect.value = project ? project.priority : 'medium';
+            projectCategoryInput.value = project ? project.category : '';
+
+            deleteProjectBtn.style.display = project ? 'inline-block' : 'none';
+            projectModal.querySelector('h3').textContent = project ? 'Edit Project' : 'New Project';
+
+            projectModal.style.display = 'flex';
+            projectTitleInput.focus();
+        }
+
+        function closeProjectModal() {
+            projectModal.style.display = 'none';
+        }
+
+        async function saveProject() {
+            const projectData = {
+                title: projectTitleInput.value.trim(),
+                description: projectDescriptionInput.value.trim(),
+                deadline: projectDeadlineInput.value || null,
+                priority: projectPrioritySelect.value,
+                category: projectCategoryInput.value.trim() || null,
+                status: 'active' // Default status
+            };
+
+            if (!projectData.title) {
+                alert('Project title is required.');
+                return;
+            }
+
+            const url = editingProjectId ? `/api/projects/${editingProjectId}` : '/api/projects';
+            const method = editingProjectId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(projectData)
+                });
+
+                if (!response.ok) throw new Error(`Failed to ${method === 'POST' ? 'create' : 'update'} project`);
+
+                // WebSocket will handle the UI update
+                closeProjectModal();
+
+            } catch (error) {
+                console.error(`Error saving project:`, error);
+                alert(`Could not save the project. Please try again.`);
+            }
+        }
+
+        async function deleteProject() {
+            if (!editingProjectId) return;
+
+            if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                try {
+                    const response = await fetch(`/api/projects/${editingProjectId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) throw new Error('Failed to delete project');
+
+                    // WebSocket will handle the UI update
+                    closeProjectModal();
+
+                } catch (error) {
+                    console.error('Error deleting project:', error);
+                    alert('Could not delete the project. Please try again.');
+                }
+            }
+        }
+
+        function calculateProjectProgress(projectId) {
+            const projectTasks = tasks.filter(t => t.project_id === projectId);
+            if (projectTasks.length === 0) {
+                return 0;
+            }
+            const completedTasks = projectTasks.filter(t => {
+                // Consider a task completed if it's marked completed for today
+                const today = getDateInfo(new Date()).dateString;
+                return t.completedOn[today];
+            });
+            return Math.round((completedTasks.length / projectTasks.length) * 100);
+        }
+
+        function renderProjects() {
+            projectsContainer.innerHTML = ''; // Clear existing projects
+
+            if (projects.length === 0) {
+                projectsContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:2rem;">No projects yet. Click the \'+\' button to add one.</p>';
+                return;
+            }
+
+            const projectList = document.createElement('div');
+            projectList.className = 'project-list';
+            projects.forEach(project => {
+                const projectCard = document.createElement('div');
+                projectCard.className = 'project-card';
+                projectCard.dataset.projectId = project.id;
+
+                const progress = calculateProjectProgress(project.id);
+
+                projectCard.innerHTML = `
+                    <div class="project-card-header">
+                        <h4 class="project-title">${project.title}</h4>
+                        <div class="project-priority priority-${project.priority}">${project.priority}</div>
+                    </div>
+                    <p class="project-description">${project.description || ''}</p>
+                    <div class="project-progress-bar">
+                        <div class="project-progress-bar-inner" style="width: ${progress}%;"></div>
+                    </div>
+                    <div class="project-card-footer">
+                        <span class="project-category">${project.category || 'Uncategorized'}</span>
+                        <span class="project-deadline">${project.deadline ? 'Due: ' + new Date(project.deadline).toLocaleDateString() : ''}</span>
+                    </div>
+                `;
+                projectList.appendChild(projectCard);
+            });
+
+            projectsContainer.appendChild(projectList);
+        }
+
+        cancelProjectBtn.addEventListener('click', closeProjectModal);
+        saveProjectBtn.addEventListener('click', saveProject);
+        deleteProjectBtn.addEventListener('click', deleteProject);
+
+        projectsContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.project-card');
+            if (card) {
+                const projectId = card.dataset.projectId;
+                showProjectDetailView(projectId);
+            }
+        });
+
+        function showProjectDetailView(projectId) {
+            projectsContainer.style.display = 'none';
+            projectDetailContainer.style.display = 'block';
+            renderProjectDetail(projectId);
+        }
+
+        function renderProjectDetail(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) {
+                showProjectsView(); // Go back if project not found
+                return;
+            }
+
+            const subtasks = tasks.filter(t => t.project_id === projectId);
+
+            projectDetailContainer.innerHTML = `
+                <div class="project-detail-header">
+                    <button id="backToProjectsBtn" class="back-btn">← Projects</button>
+                    <button id="editProjectBtn" class="edit-btn">Edit</button>
+                </div>
+                <h2 class="project-detail-title">${project.title}</h2>
+                <p class="project-detail-description">${project.description || ''}</p>
+                <div class="project-detail-meta">
+                    <span>Priority: <span class="project-priority priority-${project.priority}">${project.priority}</span></span>
+                    <span>Deadline: ${project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Not set'}</span>
+                    <span>Category: ${project.category || 'Uncategorized'}</span>
+                </div>
+                <h3 class="subtasks-title">Subtasks</h3>
+                <ul class="task-list" id="subtaskList">
+                    ${subtasks.length > 0 ? subtasks.map(task => {
+                        const isCompleted = task.completedOn[getDateInfo(new Date()).dateString]; // Check for today
+                        return `
+                            <li class="task-item ${isCompleted ? 'completed' : ''}" data-task-id="${task.id}">
+                                <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}>
+                                <span class="task-text">${task.text}</span>
+                            </li>`;
+                    }).join('') : '<li>No subtasks yet.</li>'}
+                </ul>
+            `;
+
+            document.getElementById('backToProjectsBtn').addEventListener('click', showProjectsView);
+            document.getElementById('editProjectBtn').addEventListener('click', () => openProjectModal(project));
+
+            // Add event listener for subtask completion
+            projectDetailContainer.querySelector('#subtaskList').addEventListener('change', (e) => {
+                if (e.target.classList.contains('task-checkbox')) {
+                    const taskId = e.target.closest('.task-item').dataset.taskId;
+                    toggleTaskCompletion(taskId, getDateInfo(new Date()).dateString);
+                }
+            });
+        }
+
+        projectModal.addEventListener('click', (e) => {
+            if (e.target === projectModal) {
+                closeProjectModal();
+            }
+        });
+
+
         prevDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() - 1); updateView(); });
         nextDayBtn.addEventListener('click', () => { currentDisplayDate.setDate(currentDisplayDate.getDate() + 1); updateView(); });
         currentDateElement.addEventListener('click', () => { currentDisplayDate = new Date(); updateView(); });

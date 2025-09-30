@@ -71,20 +71,35 @@ header {
     margin-bottom: 1rem;
 }
 
+.header-top {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
+}
+
 .header-top h1 {
     font-size: 2.25rem;
     font-weight: 700;
-    color: var(--primary-text-color);
+    color: var(--secondary-text-color);
     letter-spacing: -0.5px;
     cursor: pointer;
     user-select: none;
     padding: 0.25rem 0.75rem;
     border-radius: var(--border-radius-md);
     transition: var(--transition-fast);
+    position: relative;
+    opacity: 0.6;
 }
 
-.header-top h1:hover {
-    background-color: var(--border-color);
+.header-top h1.active {
+    color: var(--primary-text-color);
+    opacity: 1;
+}
+
+.header-top h1:not(.active):hover {
+    color: var(--primary-text-color);
+    opacity: 0.8;
 }
 
 .date-nav {
@@ -1280,4 +1295,213 @@ body:has(.landing-hero) .container {
     transform: translateY(-2px);
     /* Add a subtle red glow on hover */
     box-shadow: 0 5px 15px rgba(217, 59, 59, 0.2);
+}
+
+/* --- Project Modal --- */
+#projectModal .modal-content {
+    max-width: 500px;
+}
+
+#projectModal h3 {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--primary-text-color);
+}
+
+#projectModal textarea {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+    border-radius: var(--border-radius-md);
+    background: var(--card-bg-color);
+    color: var(--primary-text-color);
+    resize: vertical;
+    min-height: 80px;
+}
+
+#projectModal .project-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+#projectModal label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-text-color);
+    margin-bottom: 0.5rem;
+}
+
+#projectModal input[type="date"],
+#projectModal select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+    border-radius: var(--border-radius-md);
+    background: var(--card-bg-color);
+    color: var(--primary-text-color);
+}
+
+/* --- Projects View --- */
+.project-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.project-card {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition-fast);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.project-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.project-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-text-color);
+    margin-right: 1rem;
+}
+
+.project-priority {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.priority-low { background-color: #E0E0E0; color: #333; }
+.priority-medium { background-color: var(--progress-yellow); color: #5D4037; }
+.priority-high { background-color: var(--progress-red); color: white; }
+
+.project-description {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.project-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--progress-bar-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.project-progress-bar-inner {
+    height: 100%;
+    background-color: var(--progress-green);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.project-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+}
+
+.project-category {
+    font-weight: 600;
+    background-color: var(--border-color);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.project-deadline {
+    font-style: italic;
+}
+
+/* --- Project Detail View --- */
+.project-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.back-btn, .edit-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.back-btn:hover, .edit-btn:hover {
+    background-color: var(--border-color);
+}
+
+.edit-btn {
+    background-color: var(--accent-color);
+    color: var(--accent-color-inverted);
+    border-color: var(--accent-color);
+}
+
+.edit-btn:hover {
+    background-color: #333;
+}
+
+.project-detail-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.project-detail-description {
+    font-size: 1rem;
+    color: var(--secondary-text-color);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.project-detail-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.subtasks-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
 }
