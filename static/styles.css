@@ -554,6 +554,9 @@ header .date:hover {
 .modal-content input[type="text"], .modal-content input[type="number"], .modal-content select { width: 100%; padding: 0.85rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); font-size: 1rem; border-radius: var(--border-radius-md); background: var(--card-bg-color); color: var(--primary-text-color); }
 .modal-content input::placeholder { color: var(--secondary-text-color); opacity: 0.7; }
 .modal-content input:focus, .modal-content select:focus { border-color: var(--accent-color); outline: none; box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1); }
+.task-type-selection { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.task-type-btn { flex: 1; padding: 0.75rem 0.25rem; border: 1px solid var(--border-color); background: var(--card-bg-color); cursor: pointer; text-align: center; font-size: 0.9rem; font-weight: 600; border-radius: var(--border-radius-md); transition: var(--transition-fast); color: var(--secondary-text-color); }
+.task-type-btn.selected { background: var(--accent-color); color: var(--accent-color-inverted); border-color: var(--accent-color); }
 .days-selection { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
 .day-btn { padding: 0.75rem 0.25rem; border: 1px solid var(--border-color); background: var(--card-bg-color); cursor: pointer; text-align: center; font-size: 0.85rem; font-weight: 500; border-radius: var(--border-radius-md); transition: var(--transition-fast); color: var(--secondary-text-color); }
 .day-btn.selected { background: var(--accent-color); color: var(--accent-color-inverted); border-color: var(--accent-color); }
