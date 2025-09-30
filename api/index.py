@@ -61,6 +61,37 @@ def get_db_connection():
     finally:
         pool.putconn(conn)
 
+# --- Database Schema Migration ---
+def run_migrations():
+    """Checks for and applies necessary database schema changes."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            print("Checking database schema...")
+
+            # Add is_one_time column if it doesn't exist
+            cur.execute("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='tasks' AND column_name='is_one_time';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN is_one_time BOOLEAN NOT NULL DEFAULT false;")
+                print(" -> Added 'is_one_time' column to 'tasks' table.")
+
+            # Add date column if it doesn't exist
+            cur.execute("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='tasks' AND column_name='date';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN date DATE;")
+                print(" -> Added 'date' column to 'tasks' table.")
+
+            conn.commit()
+            print("Schema check complete.")
+
+run_migrations()
+# --- End Migration ---
+
 # --- Flask-Login Configuration ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -97,13 +128,18 @@ def load_user(user_id):
 def read_user_tasks():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker FROM tasks WHERE user_id = %s;", (current_user.id,))
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date FROM tasks WHERE user_id = %s;", (current_user.id,))
             tasks = cur.fetchall()
             
     for task in tasks:
         task['id'] = str(task['id'])
         task['completedOn'] = task.pop('completed_on')
         task['habitTracker'] = task.pop('habit_tracker')
+        task['isOneTime'] = task.pop('is_one_time')
+        # Convert date object to string, if it exists
+        if task['date']:
+            task['date'] = task['date'].isoformat()
+
     return tasks
 
 def write_user_tasks(tasks):
@@ -120,7 +156,9 @@ def write_user_tasks(tasks):
                         task.get('group'),
                         json.dumps(task['recurrence']),
                         json.dumps(task['completedOn']),
-                        json.dumps(task['habitTracker'])
+                        json.dumps(task.get('habitTracker')),
+                        task.get('isOneTime', False),
+                        task.get('date')
                     )
                     for task in tasks
                 ]
@@ -128,7 +166,7 @@ def write_user_tasks(tasks):
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date)
                     VALUES %s
                     """,
                     task_values

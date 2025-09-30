@@ -406,8 +406,8 @@
                             return;
                         }
                         task.recurrence = selectedDays;
-                        delete task.isOneTime;
-                        delete task.date;
+                        task.isOneTime = false;
+                        task.date = null;
                         if (!task.habitTracker) {
                             task.habitTracker = { goal: 21, completedDates: [] };
                         }
@@ -427,7 +427,7 @@
                         alert('For a repetitive task, at least one day must be selected.');
                         return;
                     }
-                    tasks.push({ id: generateUUID(), text, group, recurrence: selectedDays, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } });
+                    tasks.push({ id: generateUUID(), text, group, recurrence: selectedDays, isOneTime: false, date: null, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } });
                 } else { // New one-time task
                     tasks.push({ id: generateUUID(), text, group, recurrence: [], isOneTime: true, date: formatDateString(currentDisplayDate), completedOn: {} });
                 }
