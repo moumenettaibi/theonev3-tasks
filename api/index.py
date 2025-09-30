@@ -6,9 +6,9 @@ import uuid
 import atexit
 import psycopg2
 import psycopg2.extras
+from datetime import timedelta
 from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
-from datetime import timedelta  # --- MODIFIED: Imported timedelta
 
 from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -86,6 +86,15 @@ def run_migrations():
                 cur.execute("ALTER TABLE tasks ADD COLUMN date DATE;")
                 print(" -> Added 'date' column to 'tasks' table.")
 
+            # Add reminder_time column if it doesn't exist
+            cur.execute("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='tasks' AND column_name='reminder_time';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN reminder_time TIME;")
+                print(" -> Added 'reminder_time' column to 'tasks' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -128,17 +137,23 @@ def load_user(user_id):
 def read_user_tasks():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date FROM tasks WHERE user_id = %s;", (current_user.id,))
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, reminder_time FROM tasks WHERE user_id = %s;", (current_user.id,))
             tasks = cur.fetchall()
-            
+
     for task in tasks:
         task['id'] = str(task['id'])
-        task['completedOn'] = task.pop('completed_on')
-        task['habitTracker'] = task.pop('habit_tracker')
-        task['isOneTime'] = task.pop('is_one_time')
-        # Convert date object to string, if it exists
-        if task['date']:
-            task['date'] = task['date'].isoformat()
+        task['completedOn'] = task.pop('completed_on', {})
+        task['habitTracker'] = task.pop('habit_tracker', None)
+        task['isOneTime'] = task.pop('is_one_time', False)
+
+        # Safely pop reminder_time, format if it exists, and rename the key
+        reminder_time_obj = task.pop('reminder_time', None)
+        task['reminderTime'] = reminder_time_obj.strftime('%H:%M') if reminder_time_obj else None
+
+        # Safely get and format date if it exists
+        date_obj = task.get('date')
+        if date_obj:
+            task['date'] = date_obj.isoformat()
 
     return tasks
 
@@ -146,7 +161,7 @@ def write_user_tasks(tasks):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM tasks WHERE user_id = %s;", (current_user.id,))
-            
+
             if tasks:
                 task_values = [
                     (
@@ -154,19 +169,20 @@ def write_user_tasks(tasks):
                         current_user.id,
                         task['text'],
                         task.get('group'),
-                        json.dumps(task['recurrence']),
-                        json.dumps(task['completedOn']),
+                        json.dumps(task.get('recurrence', [])),
+                        json.dumps(task.get('completedOn', {})),
                         json.dumps(task.get('habitTracker')),
                         task.get('isOneTime', False),
-                        task.get('date')
+                        task.get('date'),
+                        task.get('reminderTime') or None
                     )
                     for task in tasks
                 ]
-                
+
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, reminder_time)
                     VALUES %s
                     """,
                     task_values
@@ -228,15 +244,23 @@ def register():
             if default_tasks:
                 task_values = [
                     (
-                        task['id'], new_user_id, task['text'], task.get('group'), 
-                        json.dumps(task['recurrence']), json.dumps(task['completedOn']), json.dumps(task['habitTracker'])
+                        task['id'],
+                        new_user_id,
+                        task['text'],
+                        task.get('group'),
+                        json.dumps(task['recurrence']),
+                        json.dumps(task['completedOn']),
+                        json.dumps(task.get('habitTracker')),
+                        False,  # is_one_time
+                        None,   # date
+                        None    # reminder_time
                     )
                     for task in default_tasks
                 ]
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, reminder_time)
                     VALUES %s
                     """,
                     task_values

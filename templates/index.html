@@ -171,6 +171,13 @@
             <div class="days-selection" id="daysSelection" style="display: none;">
                 <button class="day-btn" data-day="Daily">Daily</button><button class="day-btn" data-day="Mo">Mo</button><button class="day-btn" data-day="Tu">Tu</button><button class="day-btn" data-day="We">We</button><button class="day-btn" data-day="Th">Th</button><button class="day-btn" data-day="Fr">Fr</button><button class="day-btn" data-day="Sa">Sa</button><button class="day-btn" data-day="Su">Su</button>
             </div>
+            <div class="reminder-section">
+                <button id="addReminderBtn" class="add-reminder-btn">Add Reminder</button>
+                <div id="reminderInputContainer" style="display: none;">
+                    <input type="time" id="reminderTimeInput">
+                    <button id="clearReminderBtn" class="clear-reminder-btn">&times;</button>
+                </div>
+            </div>
             <div class="modal-actions"><button class="btn-danger" id="deleteBtn" style="display: none;">Delete Task</button><button id="cancelBtn">Cancel</button><button id="saveBtn">Save</button></div>
         </div>
     </div>
@@ -203,23 +210,24 @@
         const headerTitle = document.querySelector('.header-top h1'); const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage'); const categoryModal = document.getElementById('categoryModal'); const categoryInput = document.getElementById('categoryInput'); const cancelCategoryBtn = document.getElementById('cancelCategoryBtn'); const deleteCategoryBtn = document.getElementById('deleteCategoryBtn'); const saveCategoryBtn = document.getElementById('saveCategoryBtn');
         const progressContainer = document.getElementById('progressContainer'); const progressBarInner = document.getElementById('progressBarInner'); const progressText = document.getElementById('progressText');
         const oneTimeBtn = document.getElementById('oneTimeBtn'); const repetitiveBtn = document.getElementById('repetitiveBtn');
+        const addReminderBtn = document.getElementById('addReminderBtn'); const reminderInputContainer = document.getElementById('reminderInputContainer'); const reminderTimeInput = document.getElementById('reminderTimeInput'); const clearReminderBtn = document.getElementById('clearReminderBtn');
 
         // State
         const initialDataEl = document.getElementById('initial-data');
         let tasks = JSON.parse(initialDataEl.dataset.tasks);
-        let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null;
+        let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null; let reminderTimeouts = [];
 
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
-        socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } });
+        socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } scheduleReminders(); });
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
         async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 200); }
         async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); const result = await response.json(); if (response.ok) { window.location.href = result.redirect || '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
-        function showTasksView() { document.body.classList.remove('analytics-active'); tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); }
+        function showTasksView() { document.body.classList.remove('analytics-active'); tasksContainer.style.display = 'block'; analyticsContainer.style.display = 'none'; dateNav.style.visibility = 'visible'; progressContainer.style.display = 'block'; addTaskBtn.style.display = 'flex'; headerTitle.textContent = 'Tasks'; updateView(); scheduleReminders(); }
         function showAnalyticsView() { document.body.classList.add('analytics-active'); tasksContainer.style.display = 'none'; analyticsContainer.style.display = 'block'; dateNav.style.visibility = 'hidden'; progressContainer.style.display = 'none'; addTaskBtn.style.display = 'none'; headerTitle.textContent = 'Analytics'; renderAnalytics(); }
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
@@ -363,6 +371,10 @@
             oneTimeBtn.classList.add('selected');
             repetitiveBtn.classList.remove('selected');
             daysSelection.style.display = 'none';
+            // --- MODIFIED: Reset reminder section on close ---
+            reminderInputContainer.style.display = 'none';
+            addReminderBtn.style.display = 'block';
+            reminderTimeInput.value = '';
         }
         function openEditModal(task) {
             editingTaskId = task.id;
@@ -377,6 +389,16 @@
                 oneTimeBtn.classList.remove('selected');
                 daysSelection.style.display = 'grid';
                 document.querySelectorAll('.day-btn').forEach(btn => btn.classList.toggle('selected', task.recurrence.includes(btn.dataset.day)));
+            }
+            // --- MODIFIED: Handle reminder time on edit ---
+            if (task.reminderTime) {
+                reminderTimeInput.value = task.reminderTime;
+                reminderInputContainer.style.display = 'flex';
+                addReminderBtn.style.display = 'none';
+            } else {
+                reminderInputContainer.style.display = 'none';
+                addReminderBtn.style.display = 'block';
+                reminderTimeInput.value = '';
             }
             deleteBtn.style.display = 'inline-block';
             openTaskModal();
@@ -393,12 +415,14 @@
             }
             const isRepetitive = repetitiveBtn.classList.contains('selected');
             let group = (groupSelect.value === '--add-new--') ? newGroupInput.value.trim() || null : groupSelect.value || null;
+            const reminderTime = reminderTimeInput.value || null; // --- MODIFIED: Get reminder time
 
             if (editingTaskId) {
                 const task = tasks.find(t => t.id === editingTaskId);
                 if (task) {
                     task.text = text;
                     task.group = group;
+                    task.reminderTime = reminderTime; // --- MODIFIED: Save reminder time
                     if (isRepetitive) {
                         const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day);
                         if (selectedDays.length === 0) {
@@ -421,15 +445,23 @@
                     }
                 }
             } else { // New task
+                const baseTask = {
+                    id: generateUUID(),
+                    text,
+                    group,
+                    reminderTime, // --- MODIFIED: Save reminder time
+                    completedOn: {}
+                };
+
                 if (isRepetitive) {
                     const selectedDays = Array.from(document.querySelectorAll('.day-btn.selected')).map(btn => btn.dataset.day);
                     if (selectedDays.length === 0) {
                         alert('For a repetitive task, at least one day must be selected.');
                         return;
                     }
-                    tasks.push({ id: generateUUID(), text, group, recurrence: selectedDays, isOneTime: false, date: null, completedOn: {}, habitTracker: { goal: 21, completedDates: [] } });
+                    tasks.push({ ...baseTask, recurrence: selectedDays, isOneTime: false, date: null, habitTracker: { goal: 21, completedDates: [] } });
                 } else { // New one-time task
-                    tasks.push({ id: generateUUID(), text, group, recurrence: [], isOneTime: true, date: formatDateString(currentDisplayDate), completedOn: {} });
+                    tasks.push({ ...baseTask, recurrence: [], isOneTime: true, date: formatDateString(currentDisplayDate) });
                 }
             }
             syncTasksToServer();
@@ -445,6 +477,75 @@
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
         function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
         function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
+
+        // --- MODIFIED: Notification and Reminder Logic ---
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+                        scheduleReminders(); // Re-schedule with permission
+                    }
+                });
+            }
+        }
+
+        function showNotification(taskText) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                return;
+            }
+            new Notification('YAJORA Task Reminder', {
+                body: taskText,
+                icon: "{{ url_for('static', filename='favicon.png') }}"
+            });
+        }
+
+        function scheduleReminders() {
+            // Clear any previously scheduled reminders
+            reminderTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            reminderTimeouts = [];
+
+            if (Notification.permission !== 'granted') {
+                console.log("Notification permission not granted. Skipping reminder scheduling.");
+                return;
+            }
+
+            const now = new Date();
+
+            tasks.forEach(task => {
+                if (task.reminderTime) {
+                    const [hours, minutes] = task.reminderTime.split(':').map(Number);
+
+                    let reminderDate = new Date();
+                    reminderDate.setHours(hours, minutes, 0, 0);
+
+                    // If the time is in the past for today, schedule it for tomorrow
+                    if (reminderDate < now) {
+                        reminderDate.setDate(reminderDate.getDate() + 1);
+                    }
+
+                    const timeout = reminderDate.getTime() - now.getTime();
+
+                    if (timeout > 0) {
+                        const timeoutId = setTimeout(() => {
+                            // Check if the task is still valid and not completed for today
+                            const todayString = formatDateString(new Date());
+                            const taskIsStillActive = tasks.find(t => t.id === task.id);
+                            const isCompletedToday = taskIsStillActive && taskIsStillActive.completedOn[todayString];
+
+                            if (taskIsStillActive && !isCompletedToday) {
+                                showNotification(task.text);
+                                // Optional: re-schedule for the next day automatically for recurring tasks
+                                // For simplicity, we'll let the next full schedule run handle this.
+                            }
+                        }, timeout);
+                        reminderTimeouts.push(timeoutId);
+                    }
+                }
+            });
+            console.log(`Scheduled ${reminderTimeouts.length} reminders.`);
+        }
+
         headerTitle.addEventListener('click', () => (tasksContainer.style.display !== 'none' ? showAnalyticsView() : showTasksView()));
         addTaskBtn.addEventListener('click', () => {
             editingTaskId = null;
@@ -482,6 +583,20 @@
             oneTimeBtn.classList.remove('selected');
             daysSelection.style.display = 'grid';
         });
+
+        // --- MODIFIED: Event listeners for reminder section ---
+        addReminderBtn.addEventListener('click', () => {
+            reminderInputContainer.style.display = 'flex';
+            addReminderBtn.style.display = 'none';
+            reminderTimeInput.focus();
+        });
+
+        clearReminderBtn.addEventListener('click', () => {
+            reminderTimeInput.value = '';
+            reminderInputContainer.style.display = 'none';
+            addReminderBtn.style.display = 'block';
+        });
+
         exportBtn.addEventListener('click', exportData);
         importBtn.addEventListener('click', () => importFileInput.click());
         importFileInput.addEventListener('change', importData);
@@ -491,7 +606,10 @@
         categoryModal.addEventListener('click', e => { if (e.target === categoryModal) closeCategoryModal(); });
         habitGoalModal.addEventListener('click', e => { if (e.target === habitGoalModal) closeHabitGoalModal(); });
         welcomeMessage.textContent = `Logged in as {{ username }}.`;
-        showTasksView();
+
+        // --- MODIFIED: Initial setup on page load ---
+        requestNotificationPermission();
+        showTasksView(); // This will also call scheduleReminders
     </script>
 </body>
 
