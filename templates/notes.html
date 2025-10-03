@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAJORA - Notes</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="logo-container">
+                    <svg class="logo" id="logo" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+                        <path d="M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0-10 0" fill="currentColor" fill-opacity="0.5"/>
+                    </svg>
+                    <div class="menu" id="menu">
+                        <a href="/~" class="menu-item">Yajora Tasks</a>
+                        <a href="/notes" class="menu-item active">Yajora Notes</a>
+                    </div>
+                </div>
+                <h1>Notes</h1>
+            </div>
+        </header>
+
+        <div id="notesContainer" class="notes-grid">
+            <!-- Notes will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <div class="add-task-btn" id="addNoteBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <input type="text" id="noteTitleInput" placeholder="Note Title">
+            <div class="note-editor-container">
+                <textarea id="noteContentInput" placeholder="Start writing your note here... (Markdown supported)"></textarea>
+                <div id="notePreview" class="markdown-preview"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-danger" id="deleteNoteBtn" style="display: none;">Delete</button>
+                <button id="cancelNoteBtn">Cancel</button>
+                <button id="saveNoteBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const notesContainer = document.getElementById('notesContainer');
+            const addNoteBtn = document.getElementById('addNoteBtn');
+            const noteModal = document.getElementById('noteModal');
+            const noteTitleInput = document.getElementById('noteTitleInput');
+            const noteContentInput = document.getElementById('noteContentInput');
+            const notePreview = document.getElementById('notePreview');
+            const saveNoteBtn = document.getElementById('saveNoteBtn');
+            const cancelNoteBtn = document.getElementById('cancelNoteBtn');
+            const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+            const logo = document.getElementById('logo');
+            const menu = document.getElementById('menu');
+
+            let notes = [];
+            let editingNoteId = null;
+
+            // --- MENU DROPDOWN ---
+            logo.addEventListener('click', (event) => {
+                event.stopPropagation();
+                menu.classList.toggle('show');
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!menu.contains(event.target) && !logo.contains(event.target)) {
+                    menu.classList.remove('show');
+                }
+            });
+
+            // --- API FUNCTIONS ---
+            const fetchNotes = async () => {
+                try {
+                    const response = await fetch('/api/notes');
+                    if (!response.ok) throw new Error('Failed to fetch notes');
+                    notes = await response.json();
+                    renderNotes();
+                } catch (error) {
+                    console.error('Error fetching notes:', error);
+                    notesContainer.innerHTML = '<p class="error-message">Could not load notes.</p>';
+                }
+            };
+
+            const saveNote = async (note) => {
+                const isUpdating = !!note.id;
+                const url = isUpdating ? `/api/notes/${note.id}` : '/api/notes';
+                const method = isUpdating ? 'PUT' : 'POST';
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(note),
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Failed to save note');
+
+                    await fetchNotes(); // Refresh the notes list
+                    closeNoteModal();
+                } catch (error) {
+                    console.error('Error saving note:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            };
+
+            const deleteNote = async (noteId) => {
+                if (!confirm('Are you sure you want to delete this note?')) return;
+
+                try {
+                    const response = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Failed to delete note');
+
+                    await fetchNotes(); // Refresh the notes list
+                    closeNoteModal();
+                } catch (error) {
+                    console.error('Error deleting note:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            };
+
+            // --- RENDER FUNCTIONS ---
+            const renderNotes = () => {
+                notesContainer.innerHTML = '';
+                if (notes.length === 0) {
+                    notesContainer.innerHTML = '<p class="empty-message">No notes yet. Click the "+" to add one!</p>';
+                    return;
+                }
+                notes.forEach(note => {
+                    const noteCard = document.createElement('div');
+                    noteCard.className = 'note-card';
+                    noteCard.dataset.noteId = note.id;
+
+                    const title = document.createElement('h3');
+                    title.textContent = note.title;
+
+                    const contentPreview = document.createElement('div');
+                    contentPreview.className = 'note-content-preview';
+                    // Create a short preview from content
+                    const previewText = note.content ? (note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '')) : 'No content';
+                    contentPreview.textContent = previewText;
+
+                    const date = document.createElement('p');
+                    date.className = 'note-date';
+                    date.textContent = `Updated: ${new Date(note.updated_at).toLocaleDateString()}`;
+
+                    noteCard.appendChild(title);
+                    noteCard.appendChild(contentPreview);
+                    noteCard.appendChild(date);
+                    noteCard.addEventListener('click', () => openNoteModal(note));
+                    notesContainer.appendChild(noteCard);
+                });
+            };
+
+            // --- MODAL HANDLING ---
+            const openNoteModal = (note = null) => {
+                editingNoteId = note ? note.id : null;
+                noteTitleInput.value = note ? note.title : '';
+                noteContentInput.value = note ? note.content : '';
+                deleteNoteBtn.style.display = note ? 'inline-block' : 'none';
+                updatePreview();
+                noteModal.style.display = 'flex';
+                noteTitleInput.focus();
+            };
+
+            const closeNoteModal = () => {
+                noteModal.style.display = 'none';
+                editingNoteId = null;
+                noteTitleInput.value = '';
+                noteContentInput.value = '';
+                notePreview.innerHTML = '';
+            };
+
+            const handleSave = () => {
+                const title = noteTitleInput.value.trim();
+                const content = noteContentInput.value.trim();
+                if (!title) {
+                    alert('Title is required.');
+                    return;
+                }
+                const noteData = { title, content };
+                if (editingNoteId) {
+                    noteData.id = editingNoteId;
+                }
+                saveNote(noteData);
+            };
+
+            // --- MARKDOWN PREVIEW ---
+            const updatePreview = () => {
+                const content = noteContentInput.value;
+                if (content.trim() === '') {
+                    notePreview.style.display = 'none';
+                    noteContentInput.style.width = '100%';
+                } else {
+                    notePreview.innerHTML = marked.parse(content);
+                    notePreview.style.display = 'block';
+                    noteContentInput.style.width = '50%';
+                }
+            };
+
+            // --- EVENT LISTENERS ---
+            addNoteBtn.addEventListener('click', () => openNoteModal());
+            cancelNoteBtn.addEventListener('click', closeNoteModal);
+            saveNoteBtn.addEventListener('click', handleSave);
+            deleteNoteBtn.addEventListener('click', () => {
+                if (editingNoteId) deleteNote(editingNoteId);
+            });
+            noteContentInput.addEventListener('input', updatePreview);
+            noteModal.addEventListener('click', (e) => {
+                if (e.target === noteModal) closeNoteModal();
+            });
+
+            // Initial load
+            fetchNotes();
+        });
+    </script>
+</body>
+</html>

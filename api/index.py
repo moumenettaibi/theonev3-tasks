@@ -95,6 +95,23 @@ def run_migrations():
                 cur.execute("ALTER TABLE tasks ADD COLUMN creation_date DATE;")
                 print(" -> Added 'creation_date' column to 'tasks' table.")
 
+            # Create notes table if it doesn't exist
+            cur.execute("""
+                SELECT 1 FROM information_schema.tables WHERE table_name='notes';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("""
+                    CREATE TABLE notes (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        title TEXT NOT NULL,
+                        content TEXT,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                """)
+                print(" -> Created 'notes' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -294,6 +311,11 @@ def app_dashboard():
     tasks_data = read_user_tasks()
     return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
 
+@app.route('/notes')
+@login_required
+def notes_page():
+    return render_template('notes.html', username=current_user.username)
+
 @app.route('/api/tasks', methods=['GET', 'POST'])
 @login_required
 def handle_tasks():
@@ -309,6 +331,94 @@ def handle_tasks():
         write_user_tasks(new_tasks)
         socketio.emit('tasks_updated', new_tasks, to=current_user.id)
         return jsonify({'success': True, 'message': 'Tasks saved and synced.'})
+
+# --- Notes API Routes ---
+@app.route('/api/notes', methods=['GET'])
+@login_required
+def get_notes():
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, title, content, created_at, updated_at FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
+                (current_user.id,)
+            )
+            notes = cur.fetchall()
+    for note in notes:
+        note['id'] = str(note['id'])
+    return jsonify(notes)
+
+@app.route('/api/notes', methods=['POST'])
+@login_required
+def create_note():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    if not title:
+        return jsonify({'success': False, 'message': 'Title is required.'}), 400
+
+    new_note_id = str(uuid.uuid4())
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "INSERT INTO notes (id, user_id, title, content) VALUES (%s, %s, %s, %s) RETURNING id, created_at, updated_at;",
+                (new_note_id, current_user.id, title, content)
+            )
+            new_note = cur.fetchone()
+    conn.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Note created.',
+        'note': {
+            'id': str(new_note['id']),
+            'title': title,
+            'content': content,
+            'created_at': new_note['created_at'].isoformat(),
+            'updated_at': new_note['updated_at'].isoformat()
+        }
+    }), 201
+
+@app.route('/api/notes/<uuid:note_id>', methods=['PUT'])
+@login_required
+def update_note(note_id):
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+
+    if not title:
+        return jsonify({'success': False, 'message': 'Title is required.'}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "UPDATE notes SET title = %s, content = %s, updated_at = NOW() WHERE id = %s AND user_id = %s RETURNING updated_at;",
+                (title, content, note_id, current_user.id)
+            )
+            updated_note = cur.fetchone()
+            if updated_note is None:
+                return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
+    conn.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Note updated.',
+        'updated_at': updated_note['updated_at'].isoformat()
+    })
+
+@app.route('/api/notes/<uuid:note_id>', methods=['DELETE'])
+@login_required
+def delete_note(note_id):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM notes WHERE id = %s AND user_id = %s;",
+                (note_id, current_user.id)
+            )
+            # rowcount will be 1 if a row was deleted, 0 otherwise
+            if cur.rowcount == 0:
+                return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
+    conn.commit()
+    return jsonify({'success': True, 'message': 'Note deleted.'})
 
 # --- WebSocket Event Handlers ---
 @socketio.on('connect')

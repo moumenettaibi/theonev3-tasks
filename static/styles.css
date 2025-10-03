@@ -1330,3 +1330,236 @@ body:has(.landing-hero) .container {
     /* Add a subtle red glow on hover */
     box-shadow: 0 5px 15px rgba(217, 59, 59, 0.2);
 }
+
+/* --- YAJORA NOTES & MENU STYLES --- */
+
+/* Header Adjustments for App */
+.header-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-height: 50px;
+}
+
+.logo-container {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1002;
+}
+
+/* Overriding the landing-page .logo style for the app header */
+header .logo {
+    position: static;
+    left: auto;
+    gap: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    cursor: pointer;
+}
+
+.menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: -10px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-heavy);
+    z-index: 1001;
+    min-width: 180px;
+    padding: 0.5rem 0;
+    animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu.show {
+    display: block;
+}
+
+.menu-item {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    color: var(--primary-text-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.menu-item.active {
+    background-color: var(--border-color);
+    font-weight: 700;
+}
+
+
+/* --- Notes Page --- */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding-top: 1rem;
+}
+
+.note-card {
+    background: var(--card-bg-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-light);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    height: 220px;
+}
+
+.note-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.note-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    word-break: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.note-content-preview {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+}
+
+.note-date {
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+    opacity: 0.8;
+    margin-top: auto;
+    text-align: right;
+}
+
+.empty-message, .error-message {
+    text-align: center;
+    color: var(--secondary-text-color);
+    margin-top: 4rem;
+    font-size: 1.1rem;
+    grid-column: 1 / -1;
+}
+
+/* --- Note Editor Modal --- */
+#noteModal .modal-content {
+    max-width: 90vw;
+    width: 1000px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+}
+
+#noteTitleInput {
+    font-size: 1.75rem;
+    font-weight: 700;
+    border: none;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 1rem;
+    background: transparent;
+}
+
+.note-editor-container {
+    display: flex;
+    flex-grow: 1;
+    gap: 1rem;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#noteContentInput {
+    width: 50%;
+    height: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    resize: none;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    background-color: #fcfcfc;
+    transition: width 0.3s ease;
+}
+
+.markdown-preview {
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 0 1.5rem;
+}
+
+@media (max-width: 850px) {
+    #noteModal .modal-content {
+        height: 75vh;
+    }
+    .note-editor-container {
+        flex-direction: column;
+    }
+    #noteContentInput, .markdown-preview {
+        width: 100%;
+        height: 50%;
+        overflow-y: auto;
+    }
+    .markdown-preview {
+        display: block; /* Show preview on mobile too */
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        margin-top: 1rem;
+    }
+}
+
+/* --- Markdown Preview Styling --- */
+.markdown-preview > *:first-child { margin-top: 0; }
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4 {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.4em;
+    margin-top: 1.7em;
+    margin-bottom: 1em;
+    font-weight: 600;
+}
+.markdown-preview h1 { font-size: 1.8em; }
+.markdown-preview h2 { font-size: 1.5em; }
+.markdown-preview h3 { font-size: 1.25em; }
+.markdown-preview h4 { font-size: 1.1em; border-bottom: none; }
+.markdown-preview p { line-height: 1.7; margin-bottom: 1em; }
+.markdown-preview a { color: #0366d6; text-decoration: none; }
+.markdown-preview a:hover { text-decoration: underline; }
+.markdown-preview ul, .markdown-preview ol { margin-bottom: 1em; padding-left: 2em; }
+.markdown-preview li { margin-bottom: 0.5em; }
+.markdown-preview blockquote { border-left: 4px solid #dfe2e5; padding-left: 1em; margin: 0 0 1em 0; color: var(--secondary-text-color); }
+.markdown-preview code { background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; border-radius: 4px; font-family: 'Menlo', 'Consolas', 'Courier New', monospace; font-size: 85%; }
+.markdown-preview pre { background-color: #f6f8fa; padding: 1em; border-radius: var(--border-radius-md); overflow-x: auto; margin-bottom: 1em; }
+.markdown-preview pre code { background-color: transparent; padding: 0; font-size: 100%; }
+.markdown-preview table { width: 100%; border-collapse: collapse; margin-bottom: 1em; display: block; overflow: auto; }
+.markdown-preview th, .markdown-preview td { border: 1px solid #dfe2e5; padding: 0.6em 1em; }
+.markdown-preview th { background-color: #f6f8fa; font-weight: 600; }
+.markdown-preview hr { border: 0; border-top: 1px solid #dfe2e5; margin: 1.5em 0; }
