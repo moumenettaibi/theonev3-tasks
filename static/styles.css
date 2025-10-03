@@ -212,7 +212,46 @@ header .date:hover {
     margin-bottom: 1.5rem;
 }
 
-.chart-container h2,
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.chart-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--secondary-text-color);
+    margin: 0;
+}
+
+.chart-time-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.time-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: transparent;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.time-btn.active,
+.time-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--accent-color-inverted);
+    border-color: var(--accent-color);
+}
+
 .data-management-card h2 {
     text-align: center;
     font-size: 1rem;

@@ -131,7 +131,16 @@
 
             <!-- Charts -->
             <div class="chart-container">
-                <h2>Completion Trends</h2>
+                <div class="chart-header">
+                    <h2>Completion Trends</h2>
+                    <div class="chart-time-selector" id="completionTrendSelector">
+                        <button class="time-btn active" data-range="1M">1M</button>
+                        <button class="time-btn" data-range="3M">3M</button>
+                        <button class="time-btn" data-range="6M">6M</button>
+                        <button class="time-btn" data-range="1Y">1Y</button>
+                        <button class="time-btn" data-range="5Y">5Y</button>
+                    </div>
+                </div>
                 <canvas id="completionTrendChart"></canvas>
             </div>
             <div class="chart-container">
@@ -222,6 +231,7 @@
         const initialDataEl = document.getElementById('initial-data');
         let tasks = JSON.parse(initialDataEl.dataset.tasks);
         let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null; let weeklyPerformanceChart = null;
+        let completionTrendRange = '1M'; // Default time range
 
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
@@ -250,7 +260,7 @@
             document.getElementById('weeklyGoalsStat').textContent = analytics.weeklyGoals + '%';
             document.getElementById('totalHabitsStat').textContent = analytics.activeHabits;
             renderCommitmentCalendar();
-            renderLineChart(calculateCompletionTrend(14));
+            renderLineChart(calculateCompletionTrend(completionTrendRange));
             renderWeeklyPerformanceChart(analytics.weeklyData);
         }
 
@@ -370,7 +380,18 @@
 
             return opportunities;
         }
-        function calculateCompletionTrend(numDays) { const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = formatDateString(d); labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); const dayTasks = getTasksForDate(d); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data[numDays - 1 - i] = percentage; } return { labels, data }; }
+        function calculateCompletionTrend(range) {
+            let numDays;
+            switch (range) {
+                case '1M': numDays = 30; break;
+                case '3M': numDays = 90; break;
+                case '6M': numDays = 180; break;
+                case '1Y': numDays = 365; break;
+                case '5Y': numDays = 365 * 5; break;
+                default: numDays = 30;
+            }
+            const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = formatDateString(d); labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); const dayTasks = getTasksForDate(d); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data[numDays - 1 - i] = percentage; } return { labels, data };
+         }
         function calculateComprehensiveAnalytics() { return { currentStreak: calculateCurrentStreak(), bestStreak: calculateBestStreak(), weeklyCompletion: calculateWeeklyCompletion(), consistencyScore: calculateConsistencyScore(), peakDay: calculatePeakDay(), hardestTask: calculateHardestTask(), momentum: calculateMomentum(), dailyAverage: calculateDailyAverage(), monthlyImprovement: calculateMonthlyImprovement(), bestCategory: calculateBestCategory(), weeklyGoals: calculateWeeklyGoals(), activeHabits: calculateActiveHabits(), weeklyData: calculateWeeklyData() }; }
         function calculateCurrentStreak() { let streak = 0; const today = new Date(); for (let i = 0; i < 365; i++) { const checkDate = new Date(today); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { if (i === 0) continue; else break; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { streak++; } else { break; } } return streak; }
         function calculateBestStreak() { let bestStreak = 0; let currentStreak = 0; for (let i = 364; i >= 0; i--) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { currentStreak = 0; continue; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { currentStreak++; } else { currentStreak = 0; } bestStreak = Math.max(bestStreak, currentStreak); } return bestStreak; }
@@ -765,6 +786,16 @@
         deleteGroupModal.addEventListener('click', e => { if (e.target === deleteGroupModal) closeDeleteGroupModal(); });
         categoryModal.addEventListener('click', e => { if (e.target === categoryModal) closeCategoryModal(); });
         habitGoalModal.addEventListener('click', e => { if (e.target === habitGoalModal) closeHabitGoalModal(); });
+
+        document.getElementById('completionTrendSelector').addEventListener('click', e => {
+            if (e.target.classList.contains('time-btn')) {
+                document.querySelectorAll('#completionTrendSelector .time-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                completionTrendRange = e.target.dataset.range;
+                renderAnalytics();
+            }
+        });
+
         welcomeMessage.textContent = `Logged in as {{ username }}.`;
         showTasksView();
     </script>
