@@ -61,6 +61,10 @@ body {
     transition: max-width 0.4s ease-in-out;
 }
 
+body.notes-page-active .container {
+    max-width: 1400px;
+}
+
 /* Widen container when analytics is active to fit the calendar */
 body.analytics-active .container {
     max-width: 900px;
@@ -630,7 +634,7 @@ header .date:hover {
   }
 }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.3); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-content { background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color); }
+.modal-content { background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color); }
 
 @media (max-width: 768px) {
   .modal {
@@ -1393,7 +1397,8 @@ body:has(.landing-hero) .container {
 /* --- Notes Page Specific Styles --- */
 .notes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    /* Changed minmax to show 4 cards on larger screens */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
     padding-top: 2rem;
 }
@@ -1531,4 +1536,57 @@ body:has(.landing-hero) .container {
 
 .wikipedia-card .note-card-title {
     font-size: 1.1rem;
+}
+
+.note-card.youtube-card {
+    padding: 0;
+    position: relative;
+    background-color: #000;
+}
+
+.youtube-card .youtube-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--border-radius-lg);
+    opacity: 0.8;
+}
+
+.youtube-card .youtube-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
+}
+
+.youtube-card .play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.note-card.youtube-card:hover .play-icon {
+    background-color: #ff0000;
+}
+
+.youtube-card .note-card-title {
+    color: white;
+    font-size: 1.1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }

@@ -364,6 +364,7 @@ def analyze_note_content(content):
     tmdb_movie_pattern = re.compile(r'themoviedb\.org/movie/(\d+)')
     tmdb_tv_pattern = re.compile(r'themoviedb\.org/tv/(\d+)')
     wikipedia_pattern = re.compile(r'wikipedia\.org/wiki/([^/\s\)"\']*)')
+    youtube_pattern = re.compile(r'(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)')
 
     movie_match = tmdb_movie_pattern.search(content)
     if movie_match:
@@ -388,6 +389,11 @@ def analyze_note_content(content):
         except (wikipedia.exceptions.PageError, wikipedia.exceptions.DisambiguationError) as e:
             print(f"Wikipedia error for '{page_title}': {e}")
             return 'Wikipedia', {'page_title': page_title.replace('_',' '), 'details': {'title': page_title.replace('_',' ')}}
+
+    youtube_match = youtube_pattern.search(content)
+    if youtube_match:
+        video_id = youtube_match.group(1)
+        return 'YouTube', {'video_id': video_id}
 
     return 'Standard', None
 
