@@ -21,7 +21,14 @@
     <div class="container">
         <header>
             <div class="header-top">
-                <h1></h1>
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='favicon.png') }}" alt="Yajora Logo" class="logo">
+                    <div id="appDropdown" class="dropdown-content">
+                        <a href="/~">Yajora Tasks</a>
+                        <a href="/notes">Yajora Notes</a>
+                    </div>
+                </div>
+                <h1 id="headerTitle"></h1>
             </div>
             <div class="date-nav">
                 <span class="nav-arrow" id="prevDayBtn">‹</span>
@@ -222,7 +229,10 @@
 
     <script>
         // DOM Elements
-        const headerTitle = document.querySelector('.header-top h1'); const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage'); const categoryModal = document.getElementById('categoryModal'); const categoryInput = document.getElementById('categoryInput'); const cancelCategoryBtn = document.getElementById('cancelCategoryBtn'); const deleteCategoryBtn = document.getElementById('deleteCategoryBtn'); const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+        const headerTitle = document.getElementById('headerTitle');
+        const appDropdown = document.getElementById('appDropdown');
+        const logo = document.querySelector('.logo');
+        const tasksContainer = document.getElementById('tasksContainer'); const analyticsContainer = document.getElementById('analyticsContainer'); const taskList = document.getElementById('taskList'); const addTaskBtn = document.getElementById('addTaskBtn'); const dateNav = document.querySelector('.date-nav'); const currentDateElement = document.getElementById('currentDate'); const prevDayBtn = document.getElementById('prevDayBtn'); const nextDayBtn = document.getElementById('nextDayBtn'); const taskModal = document.getElementById('taskModal'); const taskInput = document.getElementById('taskInput'); const saveBtn = document.getElementById('saveBtn'); const cancelBtn = document.getElementById('cancelBtn'); const deleteBtn = document.getElementById('deleteBtn'); const daysSelection = document.getElementById('daysSelection'); const groupSelect = document.getElementById('groupSelect'); const newGroupInput = document.getElementById('newGroupInput'); const deleteGroupModal = document.getElementById('deleteGroupModal'); const deleteGroupModalText = document.getElementById('deleteGroupModalText'); const cancelDeleteGroupBtn = document.getElementById('cancelDeleteGroupBtn'); const confirmDeleteGroupBtn = document.getElementById('confirmDeleteGroupBtn'); const importBtn = document.getElementById('importBtn'); const exportBtn = document.getElementById('exportBtn'); const importFileInput = document.getElementById('importFileInput'); const habitGoalModal = document.getElementById('habitGoalModal'); const habitInfoText = document.getElementById('habitInfoText'); const habitGoalInput = document.getElementById('habitGoalInput'); const saveHabitGoalBtn = document.getElementById('saveHabitGoalBtn'); const cancelHabitGoalBtn = document.getElementById('cancelHabitGoalBtn'); const logoutBtn = document.getElementById('logoutBtn'); const welcomeMessage = document.getElementById('welcomeMessage'); const categoryModal = document.getElementById('categoryModal'); const categoryInput = document.getElementById('categoryInput'); const cancelCategoryBtn = document.getElementById('cancelCategoryBtn'); const deleteCategoryBtn = document.getElementById('deleteCategoryBtn'); const saveCategoryBtn = document.getElementById('saveCategoryBtn');
         const progressContainer = document.getElementById('progressContainer'); const progressBarInner = document.getElementById('progressBarInner'); const progressText = document.getElementById('progressText');
         const oneTimeBtn = document.getElementById('oneTimeBtn'); const repetitiveBtn = document.getElementById('repetitiveBtn');
         const habitStartDateInput = document.getElementById('habitStartDateInput'); const habitEndDateDisplay = document.getElementById('habitEndDateDisplay');
@@ -741,6 +751,18 @@
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
         function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
         function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
+        // --- Dropdown Menu Logic ---
+        logo.addEventListener('click', (event) => {
+            event.stopPropagation();
+            appDropdown.style.display = appDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (!logo.contains(event.target) && appDropdown.style.display === 'block') {
+                appDropdown.style.display = 'none';
+            }
+        });
+
         headerTitle.addEventListener('click', () => (tasksContainer.style.display !== 'none' ? showAnalyticsView() : showTasksView()));
         addTaskBtn.addEventListener('click', () => {
             editingTaskId = null;

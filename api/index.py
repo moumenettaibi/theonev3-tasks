@@ -95,6 +95,24 @@ def run_migrations():
                 cur.execute("ALTER TABLE tasks ADD COLUMN creation_date DATE;")
                 print(" -> Added 'creation_date' column to 'tasks' table.")
 
+            # Check for notes table
+            cur.execute("""
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name='notes';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("""
+                    CREATE TABLE notes (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        title TEXT NOT NULL,
+                        content TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                print(" -> Created 'notes' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -293,6 +311,112 @@ def home():
 def app_dashboard():
     tasks_data = read_user_tasks()
     return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+
+@app.route('/notes')
+@login_required
+def notes_page():
+    return render_template('notes.html', username=current_user.username)
+
+# --- Notes API Routes ---
+
+@app.route('/api/notes', methods=['GET'])
+@login_required
+def get_notes():
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, title, content, created_at, updated_at FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
+                (current_user.id,)
+            )
+            notes = cur.fetchall()
+    # Convert datetime objects to ISO 8601 strings
+    for note in notes:
+        note['created_at'] = note['created_at'].isoformat()
+        note['updated_at'] = note['updated_at'].isoformat()
+    return jsonify(notes)
+
+@app.route('/api/notes', methods=['POST'])
+@login_required
+def create_note():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content', '') # Default to empty string if not provided
+    if not title:
+        return jsonify({'success': False, 'message': 'Title is required.'}), 400
+
+    new_note_id = str(uuid.uuid4())
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "INSERT INTO notes (id, user_id, title, content) VALUES (%s, %s, %s, %s) RETURNING id, title, content, created_at, updated_at;",
+                (new_note_id, current_user.id, title, content)
+            )
+            new_note = cur.fetchone()
+    conn.commit()
+
+    new_note['created_at'] = new_note['created_at'].isoformat()
+    new_note['updated_at'] = new_note['updated_at'].isoformat()
+
+    return jsonify({'success': True, 'message': 'Note created successfully.', 'note': new_note}), 201
+
+@app.route('/api/notes/<uuid:note_id>', methods=['PUT'])
+@login_required
+def update_note(note_id):
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+
+    if title is None and content is None:
+        return jsonify({'success': False, 'message': 'At least one field (title or content) must be provided for update.'}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # First, verify the note belongs to the current user
+            cur.execute("SELECT id FROM notes WHERE id = %s AND user_id = %s;", (str(note_id), current_user.id))
+            if cur.fetchone() is None:
+                return jsonify({'success': False, 'message': 'Note not found or you do not have permission to edit it.'}), 404
+
+            # Build the update query dynamically
+            update_fields = []
+            params = []
+            if title is not None:
+                update_fields.append("title = %s")
+                params.append(title)
+            if content is not None:
+                update_fields.append("content = %s")
+                params.append(content)
+
+            update_fields.append("updated_at = CURRENT_TIMESTAMP")
+
+            query = f"UPDATE notes SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, content, created_at, updated_at;"
+            params.append(str(note_id))
+
+            cur.execute(query, tuple(params))
+            updated_note = cur.fetchone()
+
+    conn.commit()
+
+    updated_note['created_at'] = updated_note['created_at'].isoformat()
+    updated_note['updated_at'] = updated_note['updated_at'].isoformat()
+
+    return jsonify({'success': True, 'message': 'Note updated successfully.', 'note': updated_note})
+
+@app.route('/api/notes/<uuid:note_id>', methods=['DELETE'])
+@login_required
+def delete_note(note_id):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            # Verify ownership and delete in one step
+            cur.execute(
+                "DELETE FROM notes WHERE id = %s AND user_id = %s;",
+                (str(note_id), current_user.id)
+            )
+            # rowcount will be 1 if a row was deleted, 0 otherwise
+            if cur.rowcount == 0:
+                return jsonify({'success': False, 'message': 'Note not found or you do not have permission to delete it.'}), 404
+    conn.commit()
+    return jsonify({'success': True, 'message': 'Note deleted successfully.'})
+
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAJORA - Notes</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='favicon.png') }}" alt="Yajora Logo" class="logo">
+                    <div id="appDropdown" class="dropdown-content">
+                        <a href="/~">Yajora Tasks</a>
+                        <a href="/notes">Yajora Notes</a>
+                    </div>
+                </div>
+                <h1 id="headerTitle">Notes</h1>
+            </div>
+        </header>
+
+        <div id="notesContainer" class="notes-grid">
+            <!-- Notes will be dynamically inserted here -->
+        </div>
+
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="add-task-btn" id="addNoteBtn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- Note Creation/Edit Modal -->
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <input type="text" id="noteTitleInput" placeholder="Note Title">
+            <div id="editor-container" style="display:flex; flex-direction:column; flex-grow: 1;">
+                 <textarea id="noteContentInput" placeholder="Start writing your note... (Markdown is supported)"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-danger" id="deleteNoteBtn" style="display: none;">Delete</button>
+                <button id="cancelNoteBtn">Cancel</button>
+                <button id="saveNoteBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const notesContainer = document.getElementById('notesContainer');
+            const addNoteBtn = document.getElementById('addNoteBtn');
+            const noteModal = document.getElementById('noteModal');
+            const noteTitleInput = document.getElementById('noteTitleInput');
+            const noteContentInput = document.getElementById('noteContentInput');
+            const saveNoteBtn = document.getElementById('saveNoteBtn');
+            const cancelNoteBtn = document.getElementById('cancelNoteBtn');
+            const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+            const appDropdown = document.getElementById('appDropdown');
+            const logo = document.querySelector('.logo');
+
+            // State
+            let notes = [];
+            let editingNoteId = null;
+
+            // --- API Communication ---
+            const api = {
+                async getNotes() {
+                    const response = await fetch('/api/notes');
+                    if (!response.ok) throw new Error('Failed to fetch notes');
+                    return response.json();
+                },
+                async createNote(title, content) {
+                    const response = await fetch('/api/notes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content }),
+                    });
+                    if (!response.ok) throw new Error('Failed to create note');
+                    return response.json();
+                },
+                async updateNote(id, title, content) {
+                    const response = await fetch(`/api/notes/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content }),
+                    });
+                    if (!response.ok) throw new Error('Failed to update note');
+                    return response.json();
+                },
+                async deleteNote(id) {
+                    const response = await fetch(`/api/notes/${id}`, {
+                        method: 'DELETE',
+                    });
+                    if (!response.ok) throw new Error('Failed to delete note');
+                    return response.json();
+                }
+            };
+
+            // --- Rendering ---
+            function renderNotes() {
+                notesContainer.innerHTML = '';
+                if (notes.length === 0) {
+                    notesContainer.innerHTML = '<p style="text-align:center; color:#888; grid-column: 1 / -1;">You have no notes yet. Click the + button to create one!</p>';
+                    return;
+                }
+                notes.forEach(note => {
+                    const card = document.createElement('div');
+                    card.className = 'note-card';
+                    card.dataset.noteId = note.id;
+
+                    const title = document.createElement('div');
+                    title.className = 'note-card-title';
+                    title.textContent = note.title;
+
+                    const content = document.createElement('div');
+                    content.className = 'note-card-content';
+                    // Use marked to parse markdown content
+                    content.innerHTML = marked.parse(note.content || '');
+
+                    card.appendChild(title);
+                    card.appendChild(content);
+                    notesContainer.appendChild(card);
+                });
+            }
+
+            // --- Modal ---
+            function openNoteModal(note = null) {
+                if (note) {
+                    editingNoteId = note.id;
+                    noteTitleInput.value = note.title;
+                    noteContentInput.value = note.content;
+                    deleteNoteBtn.style.display = 'inline-block';
+                } else {
+                    editingNoteId = null;
+                    noteTitleInput.value = '';
+                    noteContentInput.value = '';
+                    deleteNoteBtn.style.display = 'none';
+                }
+                noteModal.style.display = 'flex';
+                noteTitleInput.focus();
+            }
+
+            function closeNoteModal() {
+                noteModal.style.display = 'none';
+                editingNoteId = null;
+            }
+
+            // --- Event Handlers ---
+            async function handleSaveNote() {
+                const title = noteTitleInput.value.trim();
+                const content = noteContentInput.value;
+
+                if (!title) {
+                    alert('Title is required.');
+                    return;
+                }
+
+                try {
+                    if (editingNoteId) {
+                        // Update existing note
+                        const result = await api.updateNote(editingNoteId, title, content);
+                        const index = notes.findIndex(n => n.id === editingNoteId);
+                        if (index !== -1) {
+                            notes[index] = result.note;
+                        }
+                    } else {
+                        // Create new note
+                        const result = await api.createNote(title, content);
+                        notes.unshift(result.note); // Add to the beginning of the array
+                    }
+                    renderNotes();
+                    closeNoteModal();
+                } catch (error) {
+                    console.error('Save failed:', error);
+                    alert('Could not save note. Please try again.');
+                }
+            }
+
+            async function handleDeleteNote() {
+                if (!editingNoteId) return;
+
+                if (confirm('Are you sure you want to delete this note?')) {
+                    try {
+                        await api.deleteNote(editingNoteId);
+                        notes = notes.filter(n => n.id !== editingNoteId);
+                        renderNotes();
+                        closeNoteModal();
+                    } catch (error) {
+                        console.error('Delete failed:', error);
+                        alert('Could not delete note. Please try again.');
+                    }
+                }
+            }
+
+            // --- Event Listeners ---
+            addNoteBtn.addEventListener('click', () => openNoteModal());
+            cancelNoteBtn.addEventListener('click', closeNoteModal);
+            saveNoteBtn.addEventListener('click', handleSaveNote);
+            deleteNoteBtn.addEventListener('click', handleDeleteNote);
+
+            notesContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.note-card');
+                if (card) {
+                    const noteId = card.dataset.noteId;
+                    const noteToEdit = notes.find(n => n.id === noteId);
+                    if (noteToEdit) {
+                        openNoteModal(noteToEdit);
+                    }
+                }
+            });
+
+            noteModal.addEventListener('click', (e) => {
+                if (e.target === noteModal) {
+                    closeNoteModal();
+                }
+            });
+
+            // Dropdown Menu Logic
+            logo.addEventListener('click', (event) => {
+                event.stopPropagation();
+                appDropdown.style.display = appDropdown.style.display === 'block' ? 'none' : 'block';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (!logo.contains(event.target) && appDropdown.style.display === 'block') {
+                    appDropdown.style.display = 'none';
+                }
+            });
+
+            // --- Initialization ---
+            async function init() {
+                try {
+                    notes = await api.getNotes();
+                    renderNotes();
+                } catch (error) {
+                    console.error('Initialization failed:', error);
+                    notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes. Please refresh the page.</p>';
+                }
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
