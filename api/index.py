@@ -8,7 +8,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
-from datetime import timedelta  # --- MODIFIED: Imported timedelta
+from datetime import timedelta, date # --- MODIFIED: Imported timedelta
 
 from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -86,6 +86,15 @@ def run_migrations():
                 cur.execute("ALTER TABLE tasks ADD COLUMN date DATE;")
                 print(" -> Added 'date' column to 'tasks' table.")
 
+            # Add creation_date column if it doesn't exist
+            cur.execute("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='tasks' AND column_name='creation_date';
+            """)
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN creation_date DATE;")
+                print(" -> Added 'creation_date' column to 'tasks' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -128,7 +137,7 @@ def load_user(user_id):
 def read_user_tasks():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date FROM tasks WHERE user_id = %s;", (current_user.id,))
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date FROM tasks WHERE user_id = %s;", (current_user.id,))
             tasks = cur.fetchall()
             
     for task in tasks:
@@ -136,9 +145,12 @@ def read_user_tasks():
         task['completedOn'] = task.pop('completed_on')
         task['habitTracker'] = task.pop('habit_tracker')
         task['isOneTime'] = task.pop('is_one_time')
-        # Convert date object to string, if it exists
+        task['creationDate'] = task.pop('creation_date')
+        # Convert date objects to strings, if they exist
         if task['date']:
             task['date'] = task['date'].isoformat()
+        if task['creationDate']:
+            task['creationDate'] = task['creationDate'].isoformat()
 
     return tasks
 
@@ -158,7 +170,8 @@ def write_user_tasks(tasks):
                         json.dumps(task['completedOn']),
                         json.dumps(task.get('habitTracker')),
                         task.get('isOneTime', False),
-                        task.get('date')
+                        task.get('date'),
+                        task.get('creationDate')
                     )
                     for task in tasks
                 ]
@@ -166,7 +179,7 @@ def write_user_tasks(tasks):
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
                     VALUES %s
                     """,
                     task_values
@@ -215,16 +228,17 @@ def register():
                 (new_user_id, username, hashed_password)
             )
             
+            today_str = json.dumps(date.today().isoformat())
             default_tasks = [
-                {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}},
-                {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}}
+                {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
+                {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str}
             ]
-            
+
             if default_tasks:
                 task_values = [
                     (
@@ -236,14 +250,15 @@ def register():
                         json.dumps(task['completedOn']),
                         json.dumps(task.get('habitTracker')),
                         task.get('isOneTime', False),
-                        task.get('date')
+                        task.get('date'),
+                        task.get('creationDate')
                     )
                     for task in default_tasks
                 ]
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
                     VALUES %s
                     """,
                     task_values

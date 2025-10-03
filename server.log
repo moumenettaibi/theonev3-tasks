@@ -1,9 +1,0 @@
-Werkzeug appears to be used in a production deployment. Consider switching to a production web server instead.
-Checking database schema...
-Schema check complete.
-Starting development server with WebSocket support...
- * Serving Flask app 'index'
- * Debug mode: on
-Address already in use
-Port 5002 is in use by another program. Either identify and stop that program, or start the server with a different port.
-Database connection pool closed.
