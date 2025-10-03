@@ -327,6 +327,49 @@
         }
 
         // --- ALL OTHER JS FUNCTIONS (UNCHANGED) ---
+        function countTaskOpportunities(task) {
+            if (!task.creationDate) return 0;
+
+            const creationDate = new Date(task.creationDate + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let opportunities = 0;
+            const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+            // Determine the end date for counting
+            let endDate = today;
+            if (task.habitTracker && task.habitTracker.goal) {
+                const habitEndDate = new Date(creationDate);
+                habitEndDate.setDate(creationDate.getDate() + task.habitTracker.goal);
+                if (habitEndDate < today) {
+                    endDate = habitEndDate;
+                }
+            }
+
+            if (task.isOneTime) {
+                // A one-time task only has an opportunity if its specific date is on or before today.
+                if (task.date) {
+                    const taskDate = new Date(task.date + 'T00:00:00');
+                    if (taskDate <= today) {
+                        return 1;
+                    }
+                }
+                return 0;
+            }
+
+            // For recurring tasks, iterate from creation to end date
+            let currentDate = new Date(creationDate);
+            while (currentDate <= endDate) {
+                const dayOfWeek = daysOfWeek[currentDate.getDay()];
+                if (task.recurrence.includes('Daily') || task.recurrence.includes(dayOfWeek)) {
+                    opportunities++;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            return opportunities;
+        }
         function calculateCompletionTrend(numDays) { const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = formatDateString(d); labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); const dayTasks = getTasksForDate(d); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data[numDays - 1 - i] = percentage; } return { labels, data }; }
         function calculateComprehensiveAnalytics() { return { currentStreak: calculateCurrentStreak(), bestStreak: calculateBestStreak(), weeklyCompletion: calculateWeeklyCompletion(), consistencyScore: calculateConsistencyScore(), peakDay: calculatePeakDay(), hardestTask: calculateHardestTask(), momentum: calculateMomentum(), dailyAverage: calculateDailyAverage(), monthlyImprovement: calculateMonthlyImprovement(), bestCategory: calculateBestCategory(), weeklyGoals: calculateWeeklyGoals(), activeHabits: calculateActiveHabits(), weeklyData: calculateWeeklyData() }; }
         function calculateCurrentStreak() { let streak = 0; const today = new Date(); for (let i = 0; i < 365; i++) { const checkDate = new Date(today); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { if (i === 0) continue; else break; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { streak++; } else { break; } } return streak; }
@@ -334,12 +377,60 @@
         function calculateWeeklyCompletion() { let totalTasks = 0, completedTasks = 0; for (let i = 0; i < 7; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); totalTasks += dayTasks.length; completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length; } return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0; }
         function calculateConsistencyScore() { let daysWithTasks = 0, daysCompleted = 0; for (let i = 0; i < 30; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length > 0) { daysWithTasks++; const completed = dayTasks.filter(task => task.completedOn[dateString] === true); if (completed.length > 0) daysCompleted++; } } return daysWithTasks > 0 ? Math.round((daysCompleted / daysWithTasks) * 100) : 0; }
         function calculatePeakDay() { const dayCounts = { 'Su': 0, 'Mo': 0, 'Tu': 0, 'We': 0, 'Th': 0, 'Fr': 0, 'Sa': 0 }; const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; tasks.forEach(task => { Object.keys(task.completedOn).forEach(dateStr => { if (task.completedOn[dateStr]) { const d = new Date(dateStr); const dayOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()]; dayCounts[dayOfWeek]++; } }); }); const peakDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b); const dayIndex = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].indexOf(peakDay); return dayNames[dayIndex] || '-'; }
-        function calculateHardestTask() { let hardestTask = '-'; let lowestCompletion = 100; tasks.forEach(task => { const totalOpportunities = Object.keys(task.completedOn).length; const completions = Object.values(task.completedOn).filter(Boolean).length; const completionRate = totalOpportunities > 0 ? (completions / totalOpportunities) * 100 : 100; if (totalOpportunities >= 5 && completionRate < lowestCompletion) { lowestCompletion = completionRate; hardestTask = task.text.length > 15 ? task.text.substring(0, 15) + '...' : task.text; } }); return hardestTask; }
+        function calculateHardestTask() {
+            let hardestTask = '-';
+            let lowestCompletion = 100;
+
+            tasks.forEach(task => {
+                // Use the new helper function to get accurate opportunity count
+                const totalOpportunities = countTaskOpportunities(task);
+                const completions = Object.values(task.completedOn).filter(Boolean).length;
+
+                // Only consider tasks with a history
+                if (totalOpportunities > 0) {
+                    const completionRate = (completions / totalOpportunities) * 100;
+                    if (completionRate < lowestCompletion) {
+                        lowestCompletion = completionRate;
+                        hardestTask = task.text.length > 15 ? task.text.substring(0, 15) + '...' : task.text;
+                    }
+                }
+            });
+
+            return hardestTask;
+        }
         function calculateMomentum() { const today = new Date(); const dateString = formatDateString(today); const todayTasks = getTasksForDate(today); if (todayTasks.length === 0) return 0; const completedToday = todayTasks.filter(task => task.completedOn[dateString] === true).length; return Math.round((completedToday / todayTasks.length) * 100); }
         function calculateDailyAverage() { let totalCompleted = 0, daysCount = 0; for (let i = 0; i < 30; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length > 0) { daysCount++; totalCompleted += dayTasks.filter(task => task.completedOn[dateString] === true).length; } } return daysCount > 0 ? Math.round(totalCompleted / daysCount) : 0; }
         function calculateMonthlyImprovement() { const thisMonth = calculateMonthCompletion(0); const lastMonth = calculateMonthCompletion(1); if (lastMonth === 0) return 0; return Math.round(((thisMonth - lastMonth) / lastMonth) * 100); }
         function calculateMonthCompletion(monthsAgo) { let totalTasks = 0, completedTasks = 0; const startDate = new Date(); startDate.setMonth(startDate.getMonth() - monthsAgo, 1); const endDate = new Date(startDate); endDate.setMonth(endDate.getMonth() + 1, 0); for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) { const dateString = formatDateString(d); const dayTasks = getTasksForDate(d); totalTasks += dayTasks.length; completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length; } return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0; }
-        function calculateBestCategory() { const categoryStats = {}; tasks.forEach(task => { const category = task.group || 'Ungrouped'; if (!categoryStats[category]) categoryStats[category] = { total: 0, completed: 0 }; Object.keys(task.completedOn).forEach(dateStr => { categoryStats[category].total++; if (task.completedOn[dateStr]) categoryStats[category].completed++; }); }); let bestCategory = '-'; let bestRate = 0; Object.keys(categoryStats).forEach(category => { const rate = categoryStats[category].total > 0 ? (categoryStats[category].completed / categoryStats[category].total) * 100 : 0; if (rate > bestRate) { bestRate = rate; bestCategory = category; } }); return bestCategory; }
+        function calculateBestCategory() {
+            const categoryStats = {};
+
+            tasks.forEach(task => {
+                const category = task.group || 'Ungrouped';
+                if (!categoryStats[category]) {
+                    categoryStats[category] = { opportunities: 0, completions: 0 };
+                }
+                // Use the new helper function for accuracy
+                categoryStats[category].opportunities += countTaskOpportunities(task);
+                categoryStats[category].completions += Object.values(task.completedOn).filter(Boolean).length;
+            });
+
+            let bestCategory = '-';
+            let bestRate = -1; // Start at -1 to ensure any category with a rate > -1 is chosen
+
+            Object.keys(categoryStats).forEach(category => {
+                const { opportunities, completions } = categoryStats[category];
+                if (opportunities > 0) {
+                    const rate = (completions / opportunities) * 100;
+                    if (rate > bestRate) {
+                        bestRate = rate;
+                        bestCategory = category;
+                    }
+                }
+            });
+
+            return bestCategory;
+        }
         function calculateWeeklyGoals() { return calculateWeeklyCompletion(); }
         function calculateActiveHabits() { return tasks.filter(task => task.recurrence.includes('Daily')).length; }
         function calculateWeeklyData() { const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; const data = []; const today = new Date(); today.setHours(0, 0, 0, 0); const dayOfWeek = today.getDay(); const daysSinceMonday = (dayOfWeek + 6) % 7; const monday = new Date(today); monday.setDate(today.getDate() - daysSinceMonday); for (let i = 0; i < 7; i++) { const checkDate = new Date(monday); checkDate.setDate(monday.getDate() + i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data.push(percentage); } return { labels, data }; }
