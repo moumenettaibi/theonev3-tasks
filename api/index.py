@@ -352,7 +352,7 @@ def create_note():
                 (new_note_id, current_user.id, title, content)
             )
             new_note = cur.fetchone()
-    conn.commit()
+            conn.commit()
 
     new_note['created_at'] = new_note['created_at'].isoformat()
     new_note['updated_at'] = new_note['updated_at'].isoformat()
@@ -393,8 +393,7 @@ def update_note(note_id):
 
             cur.execute(query, tuple(params))
             updated_note = cur.fetchone()
-
-    conn.commit()
+            conn.commit()
 
     updated_note['created_at'] = updated_note['created_at'].isoformat()
     updated_note['updated_at'] = updated_note['updated_at'].isoformat()
@@ -414,7 +413,7 @@ def delete_note(note_id):
             # rowcount will be 1 if a row was deleted, 0 otherwise
             if cur.rowcount == 0:
                 return jsonify({'success': False, 'message': 'Note not found or you do not have permission to delete it.'}), 404
-    conn.commit()
+            conn.commit()
     return jsonify({'success': True, 'message': 'Note deleted successfully.'})
 
 
