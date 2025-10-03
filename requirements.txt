@@ -4,3 +4,5 @@ Flask-SocketIO
 werkzeug
 psycopg2-binary
 python-dotenv
+requests
+wikipedia

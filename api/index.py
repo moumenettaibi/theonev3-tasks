@@ -4,6 +4,9 @@ import os
 import json
 import uuid
 import atexit
+import re
+import requests
+import wikipedia
 import psycopg2
 import psycopg2.extras
 from psycopg2.pool import SimpleConnectionPool
@@ -112,6 +115,22 @@ def run_migrations():
                     );
                 """)
                 print(" -> Created 'notes' table.")
+
+            # Add columns for enhanced note features
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='notes' AND column_name='note_type';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE notes ADD COLUMN note_type TEXT NOT NULL DEFAULT 'Standard';")
+                print(" -> Added 'note_type' column to 'notes' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='notes' AND column_name='metadata';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE notes ADD COLUMN metadata JSONB;")
+                print(" -> Added 'metadata' column to 'notes' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='notes' AND column_name='tags';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE notes ADD COLUMN tags JSONB;")
+                print(" -> Added 'tags' column to 'notes' table.")
 
             conn.commit()
             print("Schema check complete.")
@@ -317,6 +336,62 @@ def app_dashboard():
 def notes_page():
     return render_template('notes.html', username=current_user.username)
 
+# --- Helper Functions for Smart Notes ---
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
+TMDB_API_BASE_URL = 'https://api.themoviedb.org/3'
+
+def extract_tags(content):
+    """Extracts hashtags from content."""
+    return list(set(re.findall(r'#(\w+)', content)))
+
+def fetch_tmdb_data(media_type, tmdb_id):
+    """Fetches detailed data for a movie or TV show from the TMDb API."""
+    if not all([media_type, tmdb_id, TMDB_API_KEY]):
+        return None
+    url = f"{TMDB_API_BASE_URL}/{media_type}/{tmdb_id}?api_key={TMDB_API_KEY}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching TMDb data for {media_type} ID {tmdb_id}: {e}")
+        return None
+
+def analyze_note_content(content):
+    """
+    Analyzes note content to determine its type and extract metadata.
+    """
+    tmdb_movie_pattern = re.compile(r'themoviedb\.org/movie/(\d+)')
+    tmdb_tv_pattern = re.compile(r'themoviedb\.org/tv/(\d+)')
+    wikipedia_pattern = re.compile(r'wikipedia\.org/wiki/([^/\s\)"\']*)')
+
+    movie_match = tmdb_movie_pattern.search(content)
+    if movie_match:
+        tmdb_id = movie_match.group(1)
+        metadata = fetch_tmdb_data('movie', tmdb_id)
+        if metadata:
+            return 'Movie', {'tmdb_id': tmdb_id, 'details': metadata}
+
+    tv_match = tmdb_tv_pattern.search(content)
+    if tv_match:
+        tmdb_id = tv_match.group(1)
+        metadata = fetch_tmdb_data('tv', tmdb_id)
+        if metadata:
+            return 'TV Show', {'tmdb_id': tmdb_id, 'details': metadata}
+
+    wiki_match = wikipedia_pattern.search(content)
+    if wiki_match:
+        page_title = wiki_match.group(1)
+        try:
+            page = wikipedia.page(page_title.replace('_', ' '), auto_suggest=False, redirect=True)
+            return 'Wikipedia', {'page_title': page.title, 'details': {'title': page.title, 'summary': page.summary, 'url': page.url}}
+        except (wikipedia.exceptions.PageError, wikipedia.exceptions.DisambiguationError) as e:
+            print(f"Wikipedia error for '{page_title}': {e}")
+            return 'Wikipedia', {'page_title': page_title.replace('_',' '), 'details': {'title': page_title.replace('_',' ')}}
+
+    return 'Standard', None
+
+
 # --- Notes API Routes ---
 
 @app.route('/api/notes', methods=['GET'])
@@ -325,11 +400,10 @@ def get_notes():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, title, content, created_at, updated_at FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
+                "SELECT id, title, content, created_at, updated_at, note_type, metadata, tags FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
                 (current_user.id,)
             )
             notes = cur.fetchall()
-    # Convert datetime objects to ISO 8601 strings
     for note in notes:
         note['created_at'] = note['created_at'].isoformat()
         note['updated_at'] = note['updated_at'].isoformat()
@@ -340,23 +414,29 @@ def get_notes():
 def create_note():
     data = request.get_json()
     title = data.get('title')
-    content = data.get('content', '') # Default to empty string if not provided
+    content = data.get('content', '')
     if not title:
         return jsonify({'success': False, 'message': 'Title is required.'}), 400
 
+    note_type, metadata = analyze_note_content(content)
+    tags = extract_tags(content)
     new_note_id = str(uuid.uuid4())
+
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "INSERT INTO notes (id, user_id, title, content) VALUES (%s, %s, %s, %s) RETURNING id, title, content, created_at, updated_at;",
-                (new_note_id, current_user.id, title, content)
+                """
+                INSERT INTO notes (id, user_id, title, content, note_type, metadata, tags)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags;
+                """,
+                (new_note_id, current_user.id, title, content, note_type, json.dumps(metadata) if metadata else None, json.dumps(tags) if tags else '[]')
             )
             new_note = cur.fetchone()
             conn.commit()
 
     new_note['created_at'] = new_note['created_at'].isoformat()
     new_note['updated_at'] = new_note['updated_at'].isoformat()
-
     return jsonify({'success': True, 'message': 'Note created successfully.', 'note': new_note}), 201
 
 @app.route('/api/notes/<uuid:note_id>', methods=['PUT'])
@@ -367,28 +447,35 @@ def update_note(note_id):
     content = data.get('content')
 
     if title is None and content is None:
-        return jsonify({'success': False, 'message': 'At least one field (title or content) must be provided for update.'}), 400
+        return jsonify({'success': False, 'message': 'No fields to update.'}), 400
 
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            # First, verify the note belongs to the current user
             cur.execute("SELECT id FROM notes WHERE id = %s AND user_id = %s;", (str(note_id), current_user.id))
             if cur.fetchone() is None:
-                return jsonify({'success': False, 'message': 'Note not found or you do not have permission to edit it.'}), 404
+                return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
 
-            # Build the update query dynamically
             update_fields = []
             params = []
             if title is not None:
                 update_fields.append("title = %s")
                 params.append(title)
+
             if content is not None:
                 update_fields.append("content = %s")
                 params.append(content)
+                note_type, metadata = analyze_note_content(content)
+                tags = extract_tags(content)
+                update_fields.append("note_type = %s")
+                params.append(note_type)
+                update_fields.append("metadata = %s")
+                params.append(json.dumps(metadata) if metadata else None)
+                update_fields.append("tags = %s")
+                params.append(json.dumps(tags) if tags else '[]')
 
             update_fields.append("updated_at = CURRENT_TIMESTAMP")
 
-            query = f"UPDATE notes SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, content, created_at, updated_at;"
+            query = f"UPDATE notes SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags;"
             params.append(str(note_id))
 
             cur.execute(query, tuple(params))
@@ -397,7 +484,6 @@ def update_note(note_id):
 
     updated_note['created_at'] = updated_note['created_at'].isoformat()
     updated_note['updated_at'] = updated_note['updated_at'].isoformat()
-
     return jsonify({'success': True, 'message': 'Note updated successfully.', 'note': updated_note})
 
 @app.route('/api/notes/<uuid:note_id>', methods=['DELETE'])
@@ -405,12 +491,10 @@ def update_note(note_id):
 def delete_note(note_id):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            # Verify ownership and delete in one step
             cur.execute(
                 "DELETE FROM notes WHERE id = %s AND user_id = %s;",
                 (str(note_id), current_user.id)
             )
-            # rowcount will be 1 if a row was deleted, 0 otherwise
             if cur.rowcount == 0:
                 return jsonify({'success': False, 'message': 'Note not found or you do not have permission to delete it.'}), 404
             conn.commit()
