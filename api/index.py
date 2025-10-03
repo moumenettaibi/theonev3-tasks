@@ -228,15 +228,22 @@ def register():
             if default_tasks:
                 task_values = [
                     (
-                        task['id'], new_user_id, task['text'], task.get('group'), 
-                        json.dumps(task['recurrence']), json.dumps(task['completedOn']), json.dumps(task['habitTracker'])
+                        task['id'],
+                        new_user_id,
+                        task['text'],
+                        task.get('group'),
+                        json.dumps(task['recurrence']),
+                        json.dumps(task['completedOn']),
+                        json.dumps(task.get('habitTracker')),
+                        task.get('isOneTime', False),
+                        task.get('date')
                     )
                     for task in default_tasks
                 ]
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker)
+                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date)
                     VALUES %s
                     """,
                     task_values
