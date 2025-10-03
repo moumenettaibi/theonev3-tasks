@@ -192,22 +192,22 @@
     </div>
     <div class="modal" id="habitGoalModal">
         <div class="modal-content">
-            <h3 style="font-weight: 600; margin-bottom: 0.75rem;">Set Habit Goal</h3>
-            <p id="habitInfoText" style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;"></p>
+            <h3>Set Habit Goal</h3>
+            <p id="habitInfoText"></p>
             <div class="form-grid">
-                <div>
-                    <label for="habitStartDateInput" style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Start Date:</label>
+                <div class="form-group">
+                    <label for="habitStartDateInput">Start Date:</label>
                     <input type="date" id="habitStartDateInput">
                 </div>
-                <div>
-                    <label for="habitGoalInput" style="font-size: 0.9rem; margin-bottom: 0.5rem; display: block; text-align: left;">Goal (days):</label>
+                <div class="form-group">
+                    <label for="habitGoalInput">Goal (days):</label>
                     <input type="number" id="habitGoalInput" placeholder="e.g., 21" min="1">
                 </div>
             </div>
-            <div style="margin-top: 1rem; text-align: left; font-size: 0.9rem;">
+            <div id="habitEndDateContainer">
                 <strong>End Date:</strong> <span id="habitEndDateDisplay">-</span>
             </div>
-            <div class="modal-actions" style="margin-top: 1.5rem;"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save Goal</button></div>
+            <div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save Goal</button></div>
         </div>
     </div>
 
