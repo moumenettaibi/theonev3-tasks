@@ -171,16 +171,28 @@ header { text-align: center; margin-bottom: 1rem; }
     max-width: 300px; /* Prevent very long titles from breaking layout */
 }
 
-.sidebar-full-embed {
-    padding: 0 !important;
-    overflow: hidden;
+/* --- Wikipedia Embed specific styles --- */
+.modal-main-content.wikipedia-embed-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
 }
 
-.wikipedia-iframe-full {
+.wikipedia-embed-content .media-preview-container {
+    width: 100%;
+    height: 100%;
+    max-width: 1000px;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-heavy);
+    border: 1px solid var(--border-color);
+}
+
+.wikipedia-embed-content iframe {
     width: 100%;
     height: 100%;
     border: none;
-    border-radius: var(--border-radius-md);
 }
 
 /* --- Note Creation Modal --- */

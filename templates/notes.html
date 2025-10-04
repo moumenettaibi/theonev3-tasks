@@ -180,17 +180,17 @@
                         `;
                         break;
                     case 'Wikipedia':
-                        useDefaultSidebar = false;
-                        const wikipediaTitle = note.metadata?.details?.title || note.title;
-                        mainContentHTML = `
-                            <div class="media-preview-container">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wikipedia-logo-v2.svg" alt="Wikipedia Logo" class="wikipedia-logo-preview">
-                                <h3 class="wikipedia-title-preview">${wikipediaTitle}</h3>
-                                ${url ? `<a href="${url}" target="_blank" class="view-details-btn">View on Wikipedia</a>` : ''}
-                            </div>
-                        `;
-                        sidebar.innerHTML = `<iframe src="${url}" class="wikipedia-iframe-full"></iframe>`;
-                        sidebar.classList.add('sidebar-full-embed');
+                        const wikipediaUrl = note.metadata?.url;
+                        if (wikipediaUrl) {
+                            mainContent.classList.add('wikipedia-embed-content');
+                            mainContentHTML = `
+                                <div class="media-preview-container">
+                                    <iframe src="${wikipediaUrl}" frameborder="0"></iframe>
+                                </div>
+                            `;
+                        } else {
+                            mainContentHTML = `<div class="content-preview">No Wikipedia URL found for this note.</div>`;
+                        }
                         break;
                     case 'YouTube':
                         const videoId = note.metadata?.video_id;
