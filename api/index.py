@@ -75,7 +75,7 @@ def run_migrations():
             cur.execute("""
                 SELECT 1 FROM information_schema.columns
                 WHERE table_name='tasks' AND column_name='is_one_time';
-            """)
+            """ )
             if cur.fetchone() is None:
                 cur.execute("ALTER TABLE tasks ADD COLUMN is_one_time BOOLEAN NOT NULL DEFAULT false;")
                 print(" -> Added 'is_one_time' column to 'tasks' table.")
@@ -84,7 +84,7 @@ def run_migrations():
             cur.execute("""
                 SELECT 1 FROM information_schema.columns
                 WHERE table_name='tasks' AND column_name='date';
-            """)
+            """ )
             if cur.fetchone() is None:
                 cur.execute("ALTER TABLE tasks ADD COLUMN date DATE;")
                 print(" -> Added 'date' column to 'tasks' table.")
@@ -93,7 +93,7 @@ def run_migrations():
             cur.execute("""
                 SELECT 1 FROM information_schema.columns
                 WHERE table_name='tasks' AND column_name='creation_date';
-            """)
+            """ )
             if cur.fetchone() is None:
                 cur.execute("ALTER TABLE tasks ADD COLUMN creation_date DATE;")
                 print(" -> Added 'creation_date' column to 'tasks' table.")
@@ -102,7 +102,7 @@ def run_migrations():
             cur.execute("""
                 SELECT 1 FROM information_schema.tables
                 WHERE table_name='notes';
-            """)
+            """ )
             if cur.fetchone() is None:
                 cur.execute("""
                     CREATE TABLE notes (
@@ -113,7 +113,7 @@ def run_migrations():
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
-                """)
+                """ )
                 print(" -> Created 'notes' table.")
 
             # Add columns for enhanced note features
@@ -216,7 +216,7 @@ def write_user_tasks(tasks):
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
+                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
                     VALUES %s
                     """,
                     task_values
@@ -295,7 +295,7 @@ def register():
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, "group", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
+                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
                     VALUES %s
                     """,
                     task_values
@@ -312,7 +312,7 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'})
+    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'}) 
 
 # --- Main Application Routes ---
 @app.route('/')
@@ -361,39 +361,57 @@ def analyze_note_content(content):
     """
     Analyzes note content to determine its type and extract metadata.
     """
-    tmdb_movie_pattern = re.compile(r'themoviedb\.org/movie/(\d+)')
-    tmdb_tv_pattern = re.compile(r'themoviedb\.org/tv/(\d+)')
-    wikipedia_pattern = re.compile(r'wikipedia\.org/wiki/([^/\s\)"\']*)')
-    youtube_pattern = re.compile(r'(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)')
+    tmdb_movie_pattern = re.compile(r"""themoviedb\.org/movie/(\d+)""")
+    tmdb_tv_pattern   = re.compile(r"""themoviedb\.org/tv/(\d+)""")
+    wikipedia_pattern = re.compile(r"""https://(?:([\w-]+)\.)?wikipedia\.org/wiki/([^/\s()"'*]+)""")
+    youtube_pattern   = re.compile(r"""(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]{11})""")
 
     movie_match = tmdb_movie_pattern.search(content)
+
     if movie_match:
         tmdb_id = movie_match.group(1)
-        metadata = fetch_tmdb_data('movie', tmdb_id)
-        if metadata:
-            return 'Movie', {'tmdb_id': tmdb_id, 'details': metadata}
+        details = fetch_tmdb_data('movie', tmdb_id)
+        if details:
+            url = f"https://www.themoviedb.org/movie/{tmdb_id}"
+            details['url'] = url
+            return 'Movie', {'tmdb_id': tmdb_id, 'details': details, 'url': url}
 
     tv_match = tmdb_tv_pattern.search(content)
     if tv_match:
         tmdb_id = tv_match.group(1)
-        metadata = fetch_tmdb_data('tv', tmdb_id)
-        if metadata:
-            return 'TV Show', {'tmdb_id': tmdb_id, 'details': metadata}
+        details = fetch_tmdb_data('tv', tmdb_id)
+        if details:
+            url = f"https://www.themoviedb.org/tv/{tmdb_id}"
+            details['url'] = url
+            return 'TV Show', {'tmdb_id': tmdb_id, 'details': details, 'url': url}
 
     wiki_match = wikipedia_pattern.search(content)
     if wiki_match:
-        page_title = wiki_match.group(1)
+        lang = wiki_match.group(1) or 'en'
+        page_title = wiki_match.group(2)
+        original_url = wiki_match.group(0)
+        
+        current_lang = "en"
         try:
+            current_lang = wikipedia.get_lang()
+        except Exception:
+            pass
+
+        try:
+            wikipedia.set_lang(lang)
             page = wikipedia.page(page_title.replace('_', ' '), auto_suggest=False, redirect=True)
-            return 'Wikipedia', {'page_title': page.title, 'details': {'title': page.title, 'summary': page.summary, 'url': page.url}}
+            return 'Wikipedia', {'page_title': page.title, 'details': {'title': page.title, 'summary': page.summary, 'url': page.url}, 'url': page.url}
         except (wikipedia.exceptions.PageError, wikipedia.exceptions.DisambiguationError) as e:
-            print(f"Wikipedia error for '{page_title}': {e}")
-            return 'Wikipedia', {'page_title': page_title.replace('_',' '), 'details': {'title': page_title.replace('_',' ')}}
+            print(f"Wikipedia error for '{page_title}' in lang '{lang}': {e}")
+            return 'Wikipedia', {'page_title': page_title.replace('_',' '), 'details': {'title': page_title.replace('_',' '), 'url': original_url}, 'url': original_url}
+        finally:
+            wikipedia.set_lang(current_lang)
 
     youtube_match = youtube_pattern.search(content)
     if youtube_match:
         video_id = youtube_match.group(1)
-        return 'YouTube', {'video_id': video_id}
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        return 'YouTube', {'video_id': video_id, 'url': url}
 
     return 'Standard', None
 

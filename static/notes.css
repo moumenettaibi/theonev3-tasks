@@ -1,0 +1,368 @@
+/* ==========================================================================
+   NOTES PAGE STYLESHEET (V5 - Centered Inspector Modal)
+   ========================================================================== */
+
+/* --- CSS Custom Properties (Variables) --- */
+:root {
+    --bg-color: #FDFDFD;
+    --primary-text-color: #1a1a1a;
+    --secondary-text-color: #6b6b6b;
+    --border-color: #EAEAEA;
+    --card-bg-color: #FFFFFF;
+    --accent-color: #1a1a1a;
+    --accent-color-inverted: #FFFFFF;
+    --danger-color: #D93B3B;
+    --danger-hover-bg: #C13535;
+    --danger-text-color: #FFFFFF;
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+    --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.05);
+    --shadow-heavy: 0 8px 25px rgba(0, 0, 0, 0.1);
+    --transition-fast: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- General Resets & Body --- */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { background: var(--bg-color); color: var(--primary-text-color); min-height: 100vh; }
+
+/* --- Main Layout & Header --- */
+.container { width: 100%; max-width: 1600px; margin: 0 auto; padding: 1rem; transition: max-width 0.4s ease-in-out; }
+header { text-align: center; margin-bottom: 1rem; }
+.header-top { display: flex; align-items: center; justify-content: center; position: relative; height: 48px; }
+.logo-container { position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 1002; }
+.logo { width: 32px; height: 32px; cursor: pointer; border-radius: 8px; transition: var(--transition-fast); }
+.logo:hover { transform: scale(1.05); box-shadow: var(--shadow-light); }
+
+/* --- Dropdown Menu --- */
+.dropdown-content { display: none; position: absolute; top: 120%; left: 0; background-color: var(--card-bg-color); min-width: 180px; box-shadow: var(--shadow-heavy); z-index: 1001; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); overflow: hidden; animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.dropdown-content a { color: var(--primary-text-color); padding: 12px 16px; text-decoration: none; display: block; text-align: left; font-size: 0.95rem; font-weight: 500; transition: background-color 0.15s ease; }
+.dropdown-content a:hover { background-color: var(--border-color); }
+
+/* --- Notes Grid Layout --- */
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); grid-auto-rows: minmax(180px, auto); gap: 1.5rem; padding-top: 2rem; }
+.note-card { background: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-light); cursor: pointer; transition: var(--transition-fast); display: flex; flex-direction: column; overflow: hidden; }
+.note-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-heavy); }
+.note-card:not(.movie-card):not(.youtube-card) { padding: 1.5rem; }
+.note-card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--primary-text-color); white-space: normal; word-wrap: break-word; }
+.note-card-content { font-size: 0.95rem; color: var(--secondary-text-color); line-height: 1.6; flex-grow: 1; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%); mask-image: linear-gradient(to bottom, black 85%, transparent 100%); }
+
+/* --- Rich Media & Grid Sizing --- */
+.note-card.movie-card, .note-card.tv-show-card { grid-row: span 2; max-height: 480px; }
+.note-card.wikipedia-card { grid-row: span 2; justify-content: center; align-items: center; text-align: center; background-color: #f8fafc; }
+.note-card.movie-card, .note-card.youtube-card { padding: 0; position: relative; color: white; }
+.movie-card .note-card-poster, .youtube-card .youtube-thumbnail { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: var(--border-radius-lg); }
+.movie-card .note-card-overlay, .youtube-card .youtube-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, transparent); }
+.movie-card .note-card-title, .youtube-card .note-card-title { color: white; font-size: 1.25rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.movie-card .note-card-meta { font-size: 0.85rem; color: #e5e7eb; margin-top: 0.25rem; }
+.wikipedia-card .wikipedia-logo { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.8; }
+.youtube-card .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background-color: rgba(0,0,0,0.5); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); pointer-events: none; }
+.note-card.youtube-card:hover .play-icon { background-color: #ff0000; transform: translate(-50%, -50%) scale(1.1); }
+
+/* --- Floating Action Button (FAB) --- */
+.add-task-btn { position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; background: var(--accent-color); color: var(--accent-color-inverted); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition-fast); box-shadow: var(--shadow-heavy); z-index: 999; border: none; }
+.add-task-btn:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); }
+
+/* ==========================================================================
+   REVISED: CENTERED INSPECTOR MODAL
+   ========================================================================== */
+
+/* The main overlay: dark, blurred, and centers its content. */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(40, 40, 40, 0.5); /* Darker overlay */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 1000;
+    padding: 2rem;
+    /* Flexbox for centering */
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* The single, unified container for the modal content. This is the white card. */
+.modal-content {
+    background: var(--card-bg-color); /* This is the background for the whole pop-up */
+    width: 90%;
+    max-width: 1300px;
+    height: 90vh;
+    max-height: 800px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-heavy);
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Two-column layout */
+    gap: 1rem;
+    padding: 1rem; /* Padding around the two columns */
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* The left panel for main content (image, iframe, etc.) */
+.modal-main-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-md); /* Inner radius */
+    overflow: hidden; /* Important for keeping images/iframes contained */
+    background: var(--bg-color); /* A light background for when content doesn't fill space */
+}
+.modal-main-content iframe { width: 100%; height: 100%; border: none; }
+.modal-main-content .content-preview { padding: 4rem; text-align: center; }
+.modal-main-content .view-on-site-btn { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); padding: 0.8rem 1.5rem; background: rgba(26, 26, 26, 0.8); color: white; border: none; border-radius: var(--border-radius-md); font-weight: 600; cursor: pointer; transition: var(--transition-fast); backdrop-filter: blur(5px); }
+.modal-main-content .view-on-site-btn:hover { background: var(--accent-color); transform: translateX(-50%) scale(1.05); }
+
+/* New styles for centered media preview in modal */
+.media-preview-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem; /* Add some padding */
+}
+
+.media-poster-preview {
+    max-height: 65vh; /* Limit height to prevent huge images */
+    max-width: 100%;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-heavy);
+    object-fit: contain; /* Ensure the whole poster is visible */
+}
+
+.view-details-btn {
+    padding: 0.8rem 1.5rem;
+    background: var(--accent-color);
+    color: var(--accent-color-inverted);
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-decoration: none;
+    box-shadow: var(--shadow-light);
+}
+
+.view-details-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-heavy);
+}
+
+/* Styles for Wikipedia modal preview */
+.wikipedia-logo-preview {
+    width: 80px;
+    height: 80px;
+    opacity: 0.9;
+}
+
+.wikipedia-title-preview {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-text-color);
+    text-align: center;
+    max-width: 300px; /* Prevent very long titles from breaking layout */
+}
+
+.sidebar-full-embed {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.wikipedia-iframe-full {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: var(--border-radius-md);
+}
+
+/* --- Note Creation Modal --- */
+.modal-content-create {
+    background: var(--card-bg-color);
+    width: 90%;
+    max-width: 600px; /* Smaller width for a simpler modal */
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-heavy);
+    padding: 2rem 2.5rem;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-content-create h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--secondary-text-color);
+    margin-bottom: 0.5rem;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    background-color: var(--bg-color);
+    color: var(--primary-text-color);
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius-md);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: var(--accent-color-inverted);
+}
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    background: var(--border-color);
+    color: var(--primary-text-color);
+}
+.btn-secondary:hover {
+    background: #e0e0e0; /* Slightly darker */
+}
+
+/* Responsive adjustments for create modal */
+@media (max-width: 768px) {
+    .modal-content-create {
+        padding: 1.5rem;
+    }
+    .modal-content-create h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* The right panel for metadata and notes. */
+.modal-sidebar {
+    background: var(--card-bg-color);
+    border-radius: var(--border-radius-md); /* Inner radius */
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar-header .title { font-size: 1.75rem; font-weight: 700; color: var(--primary-text-color); margin-bottom: 0.25rem; }
+.sidebar-header .meta { font-size: 0.9rem; color: var(--secondary-text-color); margin-bottom: 2rem; }
+.sidebar-header .meta-icon { vertical-align: middle; margin-right: 0.5rem; height: 16px; width: 16px; opacity: 0.7; }
+
+.sidebar-section { margin-bottom: 2rem; }
+.sidebar-section .section-title { font-size: 0.8rem; font-weight: 600; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+.sidebar-section .section-title .question-mark { border: 1px solid var(--border-color); border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: inline-flex; justify-content: center; align-items: center; cursor: help; }
+.sidebar-section .tldr-content { font-size: 0.95rem; line-height: 1.6; color: var(--primary-text-color); }
+
+.tags-container { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tag { background: var(--border-color); color: var(--secondary-text-color); padding: 0.3rem 0.75rem; border-radius: var(--border-radius-md); font-size: 0.85rem; font-weight: 500; }
+.add-tag-btn { background: transparent; border: 1px dashed var(--border-color); color: var(--secondary-text-color); padding: 0.3rem 0.75rem; border-radius: var(--border-radius-md); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: var(--transition-fast); }
+.add-tag-btn:hover { background: var(--border-color); color: var(--primary-text-color); }
+
+#mindNotesInput { width: 100%; min-height: 120px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 1rem; font-size: 1rem; line-height: 1.6; resize: vertical; background-color: var(--bg-color); color: var(--primary-text-color); outline: none; transition: var(--transition-fast); }
+#mindNotesInput:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1); }
+
+.sidebar-footer { margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; }
+.sidebar-footer .action-btn { background: transparent; border: none; cursor: pointer; color: var(--secondary-text-color); padding: 0.5rem; border-radius: var(--border-radius-md); transition: var(--transition-fast); }
+.sidebar-footer .action-btn:hover { background: var(--border-color); color: var(--primary-text-color); }
+.sidebar-footer .action-btn svg { width: 20px; height: 20px; }
+
+/* --- Responsive Design --- */
+@media (max-width: 1200px) {
+    .modal-content { grid-template-columns: 1.5fr 1fr; gap: 1rem; padding: 1rem; }
+}
+
+@media (max-width: 992px) {
+    .modal { padding: 0; align-items: flex-end; /* Align to bottom for mobile */ }
+    .modal-content {
+        flex-direction: column;
+        height: 90vh; /* Take up 90% of screen height */
+        width: 100%;
+        max-width: 100%;
+        gap: 0;
+        padding: 0;
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0; /* Round top corners */
+        animation: slideUpFromBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUpFromBottom { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+    .modal-main-content { min-height: 250px; flex-shrink: 0; border-radius: 0; }
+    .modal-sidebar { padding: 1.5rem; border-radius: 0; }
+    .sidebar-header .title { font-size: 1.5rem; }
+}
+
+@media (max-width: 768px) {
+    .notes-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    .note-card.movie-card, .note-card.wikipedia-card { grid-row: auto; }
+    .add-task-btn { width: 56px; height: 56px; bottom: 1rem; right: 1rem; }
+}
+
+/* --- YouTube Embed specific styles --- */
+.modal-main-content.youtube-video-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.youtube-video-content .media-preview-container {
+    position: relative;
+    width: 100%;
+    max-width: 960px; /* Control the max size */
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-heavy);
+}
+
+.youtube-video-content iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
