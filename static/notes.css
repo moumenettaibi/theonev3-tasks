@@ -41,24 +41,32 @@ header { text-align: center; margin-bottom: 1rem; }
 .dropdown-content a:hover { background-color: var(--border-color); }
 
 /* --- Notes Grid Layout --- */
-.notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); grid-auto-rows: minmax(180px, auto); gap: 1.5rem; padding-top: 2rem; }
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); grid-auto-rows: 180px; gap: 1.5rem; padding-top: 2rem; }
 .note-card { background: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-light); cursor: pointer; transition: var(--transition-fast); display: flex; flex-direction: column; overflow: hidden; }
-.note-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-heavy); }
+.note-card:hover { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); }
 .note-card:not(.movie-card):not(.youtube-card) { padding: 1.5rem; }
 .note-card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--primary-text-color); white-space: normal; word-wrap: break-word; }
 .note-card-content { font-size: 0.95rem; color: var(--secondary-text-color); line-height: 1.6; flex-grow: 1; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%); mask-image: linear-gradient(to bottom, black 85%, transparent 100%); }
 
 /* --- Rich Media & Grid Sizing --- */
-.note-card.movie-card, .note-card.tv-show-card { grid-row: span 2; max-height: 480px; }
-.note-card.wikipedia-card { grid-row: span 2; justify-content: center; align-items: center; text-align: center; background-color: #f8fafc; }
+.note-card { height: 180px; overflow: hidden; } /* Fixed height for all cards */
+.note-card.movie-card, .note-card.tv-show-card { grid-row: span 3; height: 500px; } /* Slightly reduced height for movies/TV */
+.note-card.reddit-card-grid, .note-card.x-card-grid, .note-card.wikipedia-card { grid-row: span 2; height: 360px; } /* Double height for Reddit/X/Wikipedia */
+.note-card.youtube-card { grid-row: span 1; } /* YouTube single row */
+.note-card.wikipedia-card {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: var(--card-bg-color);
+    padding: 1.5rem;
+}
 .note-card.movie-card, .note-card.youtube-card { padding: 0; position: relative; color: white; }
 .movie-card .note-card-poster, .youtube-card .youtube-thumbnail { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: var(--border-radius-lg); }
 .movie-card .note-card-overlay, .youtube-card .youtube-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, transparent); }
 .movie-card .note-card-title, .youtube-card .note-card-title { color: white; font-size: 1.25rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
 .movie-card .note-card-meta { font-size: 0.85rem; color: #e5e7eb; margin-top: 0.25rem; }
 .wikipedia-card .wikipedia-logo { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.8; }
-.youtube-card .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background-color: rgba(0,0,0,0.5); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); pointer-events: none; }
-.note-card.youtube-card:hover .play-icon { background-color: #ff0000; transform: translate(-50%, -50%) scale(1.1); }
+.youtube-card .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); pointer-events: none; }
 
 /* --- Floating Action Button (FAB) --- */
 .add-task-btn { position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; background: var(--accent-color); color: var(--accent-color-inverted); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition-fast); box-shadow: var(--shadow-heavy); z-index: 999; border: none; }
@@ -114,7 +122,7 @@ header { text-align: center; margin-bottom: 1rem; }
     justify-content: center;
     border-radius: var(--border-radius-md); /* Inner radius */
     overflow: hidden; /* Important for keeping images/iframes contained */
-    background: var(--bg-color); /* A light background for when content doesn't fill space */
+    background: var(--card-bg-color); /* A light background for when content doesn't fill space */
 }
 .modal-main-content iframe { width: 100%; height: 100%; border: none; }
 .modal-main-content .content-preview { padding: 4rem; text-align: center; }
@@ -304,16 +312,29 @@ header { text-align: center; margin-bottom: 1rem; }
 .sidebar-header .title { font-size: 1.75rem; font-weight: 700; color: var(--primary-text-color); margin-bottom: 0.25rem; }
 .sidebar-header .meta { font-size: 0.9rem; color: var(--secondary-text-color); margin-bottom: 2rem; }
 .sidebar-header .meta-icon { vertical-align: middle; margin-right: 0.5rem; height: 16px; width: 16px; opacity: 0.7; }
+.source-link { color: var(--primary-text-color); text-decoration: none; display: inline-flex; align-items: center; margin-left: 8px; }
+.source-link:hover { text-decoration: underline; }
+.source-link svg { margin-right: 4px; opacity: 0.7; }
 
 .sidebar-section { margin-bottom: 2rem; }
 .sidebar-section .section-title { font-size: 0.8rem; font-weight: 600; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
 .sidebar-section .section-title .question-mark { border: 1px solid var(--border-color); border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: inline-flex; justify-content: center; align-items: center; cursor: help; }
 .sidebar-section .tldr-content { font-size: 0.95rem; line-height: 1.6; color: var(--primary-text-color); }
 
-.tags-container { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.tag { background: var(--border-color); color: var(--secondary-text-color); padding: 0.3rem 0.75rem; border-radius: var(--border-radius-md); font-size: 0.85rem; font-weight: 500; }
+.tags-container { display: flex; flex-direction: column; gap: 0.5rem; }
+.add-tag-controls { display: flex; gap: 0.5rem; align-items: center; }
+.add-tag-controls.hidden { display: none; }
+.tag { background: var(--border-color); color: var(--secondary-text-color); padding: 0.3rem 0.75rem; border-radius: var(--border-radius-md); font-size: 0.85rem; font-weight: 500; position: relative; }
+.user-tag:hover .delete-tag { opacity: 1; }
+.delete-tag { opacity: 0; position: absolute; top: 50%; right: 4px; transform: translateY(-50%); color: #000000; font-weight: bold; cursor: pointer; transition: opacity 0.2s; font-size: 1rem; }
+.tags-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .add-tag-btn { background: transparent; border: 1px dashed var(--border-color); color: var(--secondary-text-color); padding: 0.3rem 0.75rem; border-radius: var(--border-radius-md); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: var(--transition-fast); }
 .add-tag-btn:hover { background: var(--border-color); color: var(--primary-text-color); }
+.add-tag-input { border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 0.5rem 0.75rem; font-size: 1rem; width: 300px; outline: none; transition: var(--transition-fast); }
+.add-tag-input:focus { border-color: var(--accent-color); }
+.add-tag-plus-btn { background: #000000; color: #FFFFFF; border: none; border-radius: 50%; width: 60px; height: 48px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); }
+.add-tag-plus-btn:hover { opacity: 0.8; }
+.add-tag-plus-btn svg { width: 24px; height: 24px; }
 
 #mindNotesInput { width: 100%; min-height: 120px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 1rem; font-size: 1rem; line-height: 1.6; resize: vertical; background-color: var(--bg-color); color: var(--primary-text-color); outline: none; transition: var(--transition-fast); }
 #mindNotesInput:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1); }
@@ -377,4 +398,245 @@ header { text-align: center; margin-bottom: 1rem; }
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* --- Reddit Card specific styles --- */
+.modal-main-content.reddit-card-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.reddit-card-custom {
+    width: 100%;
+    max-width: 400px; /* Square-ish card */
+    background-color: #FFFFFF;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-heavy);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.reddit-card-top {
+    background-color: #FF4500;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.snoo-logo {
+    width: 80px;
+    height: auto;
+}
+
+.reddit-card-bottom {
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.reddit-logo-text {
+    color: #FF4500;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: lowercase;
+}
+
+.reddit-post-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.reddit-subreddit {
+    font-size: 1rem;
+    color: var(--secondary-text-color);
+    margin: 0;
+}
+
+.reddit-view-btn {
+    display: inline-block;
+    width: 100%;
+    padding: 1rem;
+    background-color: #FF4500;
+    color: #FFFFFF;
+    border-radius: 50px; /* Rounded button */
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    transition: var(--transition-fast);
+    margin-top: 1rem;
+}
+
+.reddit-view-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+/* --- Reddit Card in Grid --- */
+.note-card.reddit-card-grid {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.reddit-card-grid-top {
+    background-color: #FF4500;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+.snoo-logo-grid {
+    width: 40px;
+    height: auto;
+}
+
+.reddit-card-grid-bottom {
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.reddit-card-grid .note-card-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.reddit-subreddit-grid {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    margin: 0;
+}
+
+/* --- X Card in Grid --- */
+.note-card.x-card-grid {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.x-card-grid-top {
+    background-color: #000000;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+.x-logo-grid {
+    width: 40px;
+    height: auto;
+}
+
+.x-card-grid-bottom {
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+/* --- X Card specific styles --- */
+.modal-main-content.x-card-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.x-card-custom {
+    width: 100%;
+    max-width: 400px; /* Square-ish card like Reddit */
+    background-color: #FFFFFF;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-heavy);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.x-card-top {
+    background-color: #000000;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.x-logo {
+    width: 80px;
+    height: auto;
+}
+
+.x-card-middle {
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.x-logo-text {
+    color: #000000;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: lowercase;
+}
+
+.x-post-title {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.x-card-bottom {
+    padding: 2rem;
+    text-align: center;
+}
+
+.x-view-btn {
+    display: inline-block;
+    width: 100%;
+    padding: 1rem;
+    background-color: #000000;
+    color: #FFFFFF;
+    border-radius: 50px; /* Rounded button */
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    transition: var(--transition-fast);
+    margin-top: 1rem;
+}
+
+.x-view-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
 }

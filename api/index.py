@@ -365,6 +365,8 @@ def analyze_note_content(content):
     tmdb_tv_pattern   = re.compile(r"""themoviedb\.org/tv/(\d+)""")
     wikipedia_pattern = re.compile(r"""https://(?:([\w-]+)\.)?wikipedia\.org/wiki/([^/\s()"'*]+)""")
     youtube_pattern   = re.compile(r"""(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]{11})""")
+    reddit_pattern = re.compile(r"""reddit\.com/r/(\w+)/comments/(\w+)""")
+    x_pattern = re.compile(r"""(?:twitter|x)\.com/(\w+)/status/(\d+)""")
 
     movie_match = tmdb_movie_pattern.search(content)
 
@@ -411,7 +413,67 @@ def analyze_note_content(content):
     if youtube_match:
         video_id = youtube_match.group(1)
         url = f"https://www.youtube.com/watch?v={video_id}"
-        return 'YouTube', {'video_id': video_id, 'url': url}
+        try:
+            oembed_response = requests.get(f"https://www.youtube.com/oembed?url={url}&format=json")
+            oembed_response.raise_for_status()
+            oembed_data = oembed_response.json()
+            details = {
+                'title': oembed_data.get('title'),
+                'author_name': oembed_data.get('author_name'),
+                'thumbnail': oembed_data.get('thumbnail_url'),
+            }
+            return 'YouTube', {'video_id': video_id, 'url': url, 'details': details}
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching YouTube oEmbed data for {url}: {e}")
+            return 'YouTube', {'video_id': video_id, 'url': url, 'details': {'title': 'YouTube Video'}}
+
+    reddit_match = reddit_pattern.search(content)
+    if reddit_match:
+        subreddit = reddit_match.group(1)
+        post_id = reddit_match.group(2)
+        url = f"https://www.reddit.com/r/{subreddit}/comments/{post_id}/"
+        
+        try:
+            oembed_response = requests.get(f"https://www.reddit.com/oembed?url={url}")
+            oembed_response.raise_for_status()
+            oembed_data = oembed_response.json()
+            
+            details = {
+                'title': oembed_data.get('title'),
+                'author_name': oembed_data.get('author_name'),
+                'thumbnail': oembed_data.get('thumbnail'),
+                'html': oembed_data.get('html'),
+                'url': url
+            }
+            
+            return 'Reddit', {'subreddit': subreddit, 'post_id': post_id, 'url': url, 'details': details}
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching Reddit oEmbed data for {url}: {e}")
+            return 'Reddit', {'subreddit': subreddit, 'post_id': post_id, 'url': url, 'details': {'title': 'Reddit Post', 'url': url}}
+
+    x_match = x_pattern.search(content)
+    if x_match:
+        user = x_match.group(1)
+        tweet_id = x_match.group(2)
+        url = f"https://twitter.com/{user}/status/{tweet_id}"
+        
+        try:
+            oembed_response = requests.get(f"https://publish.twitter.com/oembed?url={url}")
+            oembed_response.raise_for_status()
+            oembed_data = oembed_response.json()
+            
+            details = {
+                'author_name': oembed_data.get('author_name'),
+                'html': oembed_data.get('html'),
+                'url': oembed_data.get('url')
+            }
+            
+            return 'X', {'user': user, 'tweet_id': tweet_id, 'url': url, 'details': details}
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching X oEmbed data for {url}: {e}")
+            return 'X', {'user': user, 'tweet_id': tweet_id, 'url': url, 'details': {'author_name': user, 'url': url}}
 
     return 'Standard', None
 
@@ -444,6 +506,14 @@ def create_note():
 
     note_type, metadata = analyze_note_content(content)
     tags = extract_tags(content)
+
+    # Auto-set title from metadata if available
+    if metadata and 'details' in metadata:
+        if metadata['details'].get('title'):
+            title = metadata['details']['title']
+        elif metadata['details'].get('name'):
+            title = metadata['details']['name']
+
     new_note_id = str(uuid.uuid4())
 
     with get_db_connection() as conn:
@@ -469,8 +539,9 @@ def update_note(note_id):
     data = request.get_json()
     title = data.get('title')
     content = data.get('content')
+    tags = data.get('tags')
 
-    if title is None and content is None:
+    if title is None and content is None and tags is None:
         return jsonify({'success': False, 'message': 'No fields to update.'}), 400
 
     with get_db_connection() as conn:
@@ -489,13 +560,19 @@ def update_note(note_id):
                 update_fields.append("content = %s")
                 params.append(content)
                 note_type, metadata = analyze_note_content(content)
-                tags = extract_tags(content)
                 update_fields.append("note_type = %s")
                 params.append(note_type)
                 update_fields.append("metadata = %s")
                 params.append(json.dumps(metadata) if metadata else None)
+                # If content is updated but tags not provided, re-extract tags
+                if tags is None:
+                    extracted_tags = extract_tags(content)
+                    update_fields.append("tags = %s")
+                    params.append(json.dumps(extracted_tags) if extracted_tags else '[]')
+
+            if tags is not None:
                 update_fields.append("tags = %s")
-                params.append(json.dumps(tags) if tags else '[]')
+                params.append(json.dumps(tags))
 
             update_fields.append("updated_at = CURRENT_TIMESTAMP")
 
@@ -556,4 +633,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5002, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=5003, allow_unsafe_werkzeug=True)

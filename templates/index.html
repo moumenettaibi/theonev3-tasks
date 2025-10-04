@@ -820,6 +820,14 @@
 
         welcomeMessage.textContent = `Logged in as {{ username }}.`;
         showTasksView();
+
+        // --- Keyboard Shortcuts ---
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && e.code === 'KeyN') {
+                e.preventDefault();
+                openTaskModal();
+            }
+        });
     </script>
 </body>
 
