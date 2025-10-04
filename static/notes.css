@@ -1,0 +1,196 @@
+/* --- Notes Page Specific Styles --- */
+.notes-grid {
+    display: grid;
+    /* Changed minmax to show 4 cards on larger screens */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding-top: 2rem;
+}
+
+.note-card {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    height: 250px; /* Fixed height for consistency */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Hide overflow content */
+}
+
+.note-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.note-card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--primary-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for long titles */
+}
+
+.note-card-content {
+    font-size: 0.95rem;
+    color: var(--secondary-text-color);
+    line-height: 1.6;
+    flex-grow: 1;
+    overflow: hidden;
+    /* Using a mask for a fade-out effect on overflowing text */
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+}
+
+.note-card-content p,
+.note-card-content ul,
+.note-card-content h1,
+.note-card-content h2,
+.note-card-content h3 {
+    margin-bottom: 0.5rem;
+}
+
+#noteModal .modal-content {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#noteTitleInput {
+    font-size: 1.5rem;
+    font-weight: 600;
+    border: none;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    background-color: transparent;
+}
+
+#noteContentInput {
+    flex-grow: 1;
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 1rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: none; /* Disable manual resize */
+    background-color: var(--card-bg-color);
+    color: var(--primary-text-color);
+}
+
+/* --- Rich Note Card Styles --- */
+.note-card.movie-card,
+.note-card.tv-show-card {
+    padding: 0;
+    position: relative;
+    color: white;
+}
+
+.movie-card .note-card-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--border-radius-lg);
+}
+
+.movie-card .note-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+.movie-card .note-card-title {
+    color: white;
+    font-size: 1.25rem;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}
+
+.movie-card .note-card-meta {
+    font-size: 0.85rem;
+    color: #e5e7eb; /* gray-200 */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.note-card.wikipedia-card {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: #f8fafc; /* gray-50 */
+}
+
+.wikipedia-card .wikipedia-logo {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.wikipedia-card .note-card-title {
+    font-size: 1.1rem;
+}
+
+.note-card.youtube-card {
+    padding: 0;
+    position: relative;
+    background-color: #000;
+}
+
+.youtube-card .youtube-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--border-radius-lg);
+    opacity: 0.8;
+}
+
+.youtube-card .youtube-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 50%);
+}
+
+.youtube-card .play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.note-card.youtube-card:hover .play-icon {
+    background-color: #ff0000;
+}
+
+.youtube-card .note-card-title {
+    color: white;
+    font-size: 1.1rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
