@@ -634,7 +634,7 @@ header .date:hover {
   }
 }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.3); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-content { background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color); }
+.modal-content { background: var(--bg-color); padding: 1.5rem; border-radius: var(--border-radius-lg); width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-heavy); border: 1px solid var(--border-color); }
 
 @media (max-width: 768px) {
   .modal {

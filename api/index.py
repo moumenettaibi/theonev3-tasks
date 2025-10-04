@@ -38,7 +38,7 @@ app.secret_key = SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading")
 
 # --- Database Connection Pool ---
 try:
