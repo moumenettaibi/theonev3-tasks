@@ -28,6 +28,7 @@
 
         <div class="search-section">
             <div class="search-container">
+                <div id="searchTagsContainer" class="search-tags-container"></div>
                 <input type="text" id="searchInput" placeholder="Search notes..." class="search-input">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
@@ -101,7 +102,8 @@
             let notes = [];
             let editingNoteId = null;
             let currentTags = [];
-            let searchTerm = '';
+            let searchTerms = []; // Changed from searchTerm to searchTerms array
+            let currentInputValue = ''; // Current value being typed in input field
             let currentEditor = null;
 
             // Notification functions
@@ -252,43 +254,138 @@
             };
 
             // --- Search and Filtering ---
-            function highlightSearchTerm(text, searchTerm) {
-                if (!searchTerm.trim()) return text;
-                const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            function highlightSearchTerm(text) {
+                // Combine search terms and current input value
+                const allSearchTerms = [...searchTerms];
+                if (currentInputValue.trim()) {
+                    allSearchTerms.push(currentInputValue.trim());
+                }
+
+                if (!allSearchTerms || allSearchTerms.length === 0) return text;
+
+                // Extract search words (excluding type keywords)
+                let searchWords = [];
+                for (const term of allSearchTerms) {
+                    const trimmedTerm = term.trim();
+                    if (trimmedTerm && !typeKeywords[trimmedTerm]) {
+                        searchWords.push(trimmedTerm);
+                    }
+                }
+
+                // If no search words, return original text
+                if (searchWords.length === 0) return text;
+
+                // Create regex for highlighting search words
+                const searchPattern = searchWords.join('|');
+                const regex = new RegExp(`(${searchPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                 return text.replace(regex, '<mark>$1</mark>');
             }
 
+            // Type keyword mappings for filtering
+            const typeKeywords = {
+                'movie': 'Movie',
+                'movies': 'Movie',
+                'tv': 'TV Show',
+                'tv show': 'TV Show',
+                'show': 'TV Show',
+                'shows': 'TV Show',
+                'video': 'YouTube',
+                'videos': 'YouTube',
+                'youtube': 'YouTube',
+                'reddit': 'Reddit',
+                'x': 'X',
+                'twitter': 'X',
+                'wikipedia': 'Wikipedia',
+                'wiki': 'Wikipedia'
+            };
+
+            // --- Search Tag Management ---
+            function renderSearchTags() {
+                const container = document.getElementById('searchTagsContainer');
+                container.innerHTML = '';
+                searchTerms.forEach((term, index) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'search-tag';
+                    tag.innerHTML = `${term}<span class="search-tag-remove" data-index="${index}">×</span>`;
+                    container.appendChild(tag);
+                });
+            }
+
+            function addSearchTag(term) {
+                const trimmedTerm = term.trim().toLowerCase();
+                if (trimmedTerm && !searchTerms.includes(trimmedTerm)) {
+                    searchTerms.push(trimmedTerm);
+                    renderSearchTags();
+                    renderNotes();
+                }
+            }
+
+            function removeSearchTag(index) {
+                searchTerms.splice(index, 1);
+                renderSearchTags();
+                renderNotes();
+            }
+
+            function clearAllSearchTags() {
+                searchTerms = [];
+                renderSearchTags();
+                renderNotes();
+            }
+
             function getFilteredNotes() {
-                if (!searchTerm.trim()) {
+                // Combine search terms and current input value
+                const allSearchTerms = [...searchTerms];
+                if (currentInputValue.trim()) {
+                    allSearchTerms.push(currentInputValue.trim());
+                }
+
+                if (allSearchTerms.length === 0) {
                     return notes;
                 }
 
-                const term = searchTerm.toLowerCase();
-                return notes.filter(note => {
-                    // Search in title
-                    if (note.title && note.title.toLowerCase().includes(term)) {
-                        return true;
+                // Start with all notes
+                let filteredNotes = notes;
+
+                // Apply each search term as a filter
+                for (const term of allSearchTerms) {
+                    const trimmedTerm = term.trim();
+                    if (!trimmedTerm) continue;
+
+                    // Check if this term is a type keyword
+                    if (typeKeywords[trimmedTerm]) {
+                        // Filter by type
+                        filteredNotes = filteredNotes.filter(note => note.note_type === typeKeywords[trimmedTerm]);
+                    } else {
+                        // Search within current filtered notes for this term
+                        filteredNotes = filteredNotes.filter(note => {
+                            // Search in title
+                            if (note.title && note.title.toLowerCase().includes(trimmedTerm)) {
+                                return true;
+                            }
+                            // Search in content
+                            if (note.content && note.content.toLowerCase().includes(trimmedTerm)) {
+                                return true;
+                            }
+                            // Search in tags
+                            if (note.tags && Array.isArray(note.tags)) {
+                                if (note.tags.some(tag => tag.toLowerCase().includes(trimmedTerm))) {
+                                    return true;
+                                }
+                            }
+                            // Search in note type (for broader matching)
+                            if (note.note_type && note.note_type.toLowerCase().includes(trimmedTerm)) {
+                                return true;
+                            }
+                            // Search in TLDR
+                            if (note.tldr && note.tldr.toLowerCase().includes(trimmedTerm)) {
+                                return true;
+                            }
+                            return false;
+                        });
                     }
-                    // Search in content
-                    if (note.content && note.content.toLowerCase().includes(term)) {
-                        return true;
-                    }
-                    // Search in tags
-                    if (note.tags && Array.isArray(note.tags)) {
-                        if (note.tags.some(tag => tag.toLowerCase().includes(term))) {
-                            return true;
-                        }
-                    }
-                    // Search in note type
-                    if (note.note_type && note.note_type.toLowerCase().includes(term)) {
-                        return true;
-                    }
-                    // Search in TLDR
-                    if (note.tldr && note.tldr.toLowerCase().includes(term)) {
-                        return true;
-                    }
-                    return false;
-                });
+                }
+
+                return filteredNotes;
             }
 
             // --- Main Note Grid Rendering ---
@@ -296,8 +393,9 @@
                 const filteredNotes = getFilteredNotes();
                 notesContainer.innerHTML = '';
                 if (filteredNotes.length === 0) {
-                    if (searchTerm.trim()) {
-                        notesContainer.innerHTML = `<p style="text-align:center; color:#888; grid-column: 1 / -1;">No notes found matching "${searchTerm}".</p>`;
+                    if (searchTerms.length > 0) {
+                        const searchText = searchTerms.join(', ');
+                        notesContainer.innerHTML = `<p style="text-align:center; color:#888; grid-column: 1 / -1;">No notes found matching "${searchText}".</p>`;
                     } else {
                         notesContainer.innerHTML = '<p style="text-align:center; color:#888; grid-column: 1 / -1;">You have no notes yet. Click the + button to create one!</p>';
                     }
@@ -322,7 +420,7 @@
                             cardContent = `
                                 <img src="${posterUrl}" alt="Poster for ${title}" class="note-card-poster" loading="lazy">
                                 <div class="note-card-overlay">
-                                    <h3 class="note-card-title">${highlightSearchTerm(title, searchTerm)}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(title)}</h3>
                                     <p class="note-card-meta">${year}</p>
                                 </div>`;
                             break;
@@ -330,7 +428,7 @@
                             card.classList.add('wikipedia-card');
                             cardContent = `
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wikipedia-logo-v2.svg" alt="Wikipedia Logo" class="wikipedia-logo">
-                                <h3 class="note-card-title">${highlightSearchTerm(note.metadata?.details?.title || note.title, searchTerm)}</h3>`;
+                                <h3 class="note-card-title">${highlightSearchTerm(note.metadata?.details?.title || note.title)}</h3>`;
                             break;
                         case 'YouTube':
                              card.classList.add('youtube-card');
@@ -345,7 +443,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                                 </div>
                                 <div class="youtube-title-overlay">
-                                    <h3 class="note-card-title">${highlightSearchTerm(videoTitle, searchTerm)}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(videoTitle)}</h3>
                                 </div>`;
                             break;
                         case 'Reddit':
@@ -358,13 +456,13 @@
                                         <img src="/static/Reddit_Logo.webp" alt="Reddit Snoo" class="snoo-logo-grid">
                                     </div>
                                     <div class="reddit-card-grid-bottom">
-                                        <h3 class="note-card-title">${highlightSearchTerm(redditDetails.title, searchTerm)}</h3>
+                                        <h3 class="note-card-title">${highlightSearchTerm(redditDetails.title)}</h3>
                                         <p class="reddit-subreddit-grid">r/${subreddit}</p>
                                     </div>
                                 `;
                             } else {
                                 cardContent = `
-                                    <h3 class="note-card-title">${highlightSearchTerm(note.title, searchTerm)}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(note.title)}</h3>
                                     <div class="note-card-content">Could not load Reddit post.</div>
                                 `;
                             }
@@ -378,20 +476,20 @@
                                         <img src="/static/x-logo.png" alt="X Logo" class="x-logo-grid">
                                     </div>
                                     <div class="x-card-grid-bottom">
-                                        <h3 class="note-card-title">${highlightSearchTerm(`Tweet by @${xDetails.author_name}`, searchTerm)}</h3>
+                                        <h3 class="note-card-title">${highlightSearchTerm(`Tweet by @${xDetails.author_name}`)}</h3>
                                     </div>
                                 `;
                             } else {
                                 cardContent = `
-                                    <h3 class="note-card-title">${highlightSearchTerm(note.title, searchTerm)}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(note.title)}</h3>
                                     <div class="note-card-content">Could not load X post.</div>
                                 `;
                             }
                             break;
                         default: // Standard Note
                             cardContent = `
-                                <h3 class="note-card-title">${highlightSearchTerm(note.title || '', searchTerm)}</h3>
-                                <div class="note-card-content">${marked.parse(highlightSearchTerm(note.content || '', searchTerm))}</div>`;
+                                <h3 class="note-card-title">${highlightSearchTerm(note.title || '')}</h3>
+                                <div class="note-card-content">${marked.parse(highlightSearchTerm(note.content || ''))}</div>`;
                             break;
                     }
                     card.innerHTML = cardContent;
@@ -862,10 +960,58 @@
                 if (appDropdown.style.display === 'block') appDropdown.style.display = 'none';
             });
 
-            // Search functionality
+            // Real-time search as user types
             searchInput.addEventListener('input', (e) => {
-                searchTerm = e.target.value;
+                currentInputValue = e.target.value;
                 renderNotes();
+            });
+
+            // Search functionality
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const term = searchInput.value.trim();
+                    if (term) {
+                        addSearchTag(term);
+                        searchInput.value = '';
+                        currentInputValue = '';
+                        // Reset icon to search
+                        const icon = document.querySelector('.search-icon');
+                        icon.innerHTML = '<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+                        icon.style.pointerEvents = 'none';
+                        icon.style.cursor = 'default';
+                        icon.onclick = null;
+                    }
+                } else if (e.key === 'Backspace' && searchInput.value === '' && searchTerms.length > 0) {
+                    e.preventDefault();
+                    const lastTerm = searchTerms[searchTerms.length - 1];
+
+                    // Check if the last term is a type keyword
+                    if (typeKeywords[lastTerm]) {
+                        // For type tags, just remove completely
+                        searchTerms.pop();
+                        renderSearchTags();
+                        renderNotes();
+                    } else {
+                        // For regular search tags, convert back to input text
+                        searchTerms.pop(); // Remove last term
+                        renderSearchTags();
+                        searchInput.value = lastTerm;
+                        currentInputValue = lastTerm;
+                        renderNotes();
+                        // Position cursor at the end
+                        searchInput.focus();
+                        searchInput.setSelectionRange(lastTerm.length, lastTerm.length);
+                    }
+                }
+            });
+
+            // Event delegation for search tag removal
+            document.getElementById('searchTagsContainer').addEventListener('click', (e) => {
+                if (e.target.classList.contains('search-tag-remove')) {
+                    const index = parseInt(e.target.dataset.index);
+                    removeSearchTag(index);
+                }
             });
 
             // --- Create Modal Functions & Handlers ---
