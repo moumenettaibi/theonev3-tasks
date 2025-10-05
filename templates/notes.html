@@ -6,6 +6,9 @@
     <title>YAJORA - Notes</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='notes.css') }}">
 </head>
 <body class="notes-page-active">
@@ -99,6 +102,7 @@
             let editingNoteId = null;
             let currentTags = [];
             let searchTerm = '';
+            let currentEditor = null;
 
             // Notification functions
             function showNotification(message, duration = 2000) {
@@ -429,6 +433,7 @@
             function openNoteModal(note) {
                 editingNoteId = note ? note.id : null;
                 currentTags = note ? (note.tags || []) : [];
+                let isStandard = false;
                 document.body.classList.add('modal-open');
                 const modalContent = document.getElementById('noteModalContent');
                 modalContent.innerHTML = ''; // Clear previous content
@@ -531,7 +536,8 @@
                         }
                         break;
                     default:
-                        mainContentHTML = `<div class="content-preview">${marked.parse(note.content || 'No content.')}</div>`;
+                        isStandard = true;
+                        mainContentHTML = `<div id="wysiwyg-editor"></div>`;
                         break;
                 }
                 mainContent.innerHTML = mainContentHTML;
@@ -561,24 +567,26 @@
 
                         <div class="sidebar-section">
                             <h3 class="section-title">TLDR</h3>
-                            <p class="tldr-content ${isGenerating ? 'generating' : ''}">${tldr}</p>
+                            <p class="tldr-content ${isGenerating ? 'generating' : ''}">${isGenerating ? '' : tldr}</p>
                             ${isGenerating ? '<div class="tldr-loading"><div class="loading-spinner"></div> Generating AI summary...</div>' : ''}
                             ${!isGenerating && (tldr === 'No summary available.' || !tldr) ? `<button class="generate-tldr-btn" data-note-id="${note.id}">Generate AI Summary</button>` : ''}
                         </div>
 
                         <div class="sidebar-section">
-                            <h3 class="section-title">MIND TAGS</h3>
+                            <h3 class="section-title">TAGS</h3>
                             <div class="tags-container">
                                 <!-- Tags will be rendered here -->
                             </div>
                         </div>
 
+                        ${isStandard ? '' : `
                         <div class="sidebar-section">
                             <h3 class="section-title">
                                 MIND NOTES <span class="question-mark" title="Your personal notes. Saved automatically.">?</span>
                             </h3>
                             <textarea id="mindNotesInput" placeholder="Type here to add a note...">${note.content || ''}</textarea>
                         </div>
+                        `}
 
                         <div class="sidebar-footer">
                             <button class="action-btn" id="deleteNoteBtn" title="Delete Note">
@@ -592,14 +600,40 @@
                 modalContent.appendChild(sidebar);
                 renderTags();
 
-                // Add auto-save for mind notes
-                const mindNotesInput = document.getElementById('mindNotesInput');
-                if (mindNotesInput) {
-                    mindNotesInput.addEventListener('input', debouncedSave);
-                    mindNotesInput.addEventListener('blur', () => {
-                        clearTimeout(saveTimeout);
-                        handleSaveNote();
+                if (isStandard) {
+                    const editorElement = document.getElementById('wysiwyg-editor');
+                    currentEditor = new Quill(editorElement, {
+                        theme: 'snow',
+                        placeholder: 'Start writing your note...',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['blockquote', 'code-block'],
+                                ['link'],
+                                ['clean']
+                            ]
+                        }
                     });
+                    // Set initial content by converting markdown to HTML
+                    const initialHtml = marked.parse(note.content || '');
+                    currentEditor.root.innerHTML = initialHtml;
+                    currentEditor.on('text-change', () => {
+                        debouncedSave();
+                    });
+                }
+
+                // Add auto-save for mind notes
+                if (!isStandard) {
+                    const mindNotesInput = document.getElementById('mindNotesInput');
+                    if (mindNotesInput) {
+                        mindNotesInput.addEventListener('input', debouncedSave);
+                        mindNotesInput.addEventListener('blur', () => {
+                            clearTimeout(saveTimeout);
+                            handleSaveNote();
+                        });
+                    }
                 }
 
                 // Event delegation for generate TLDR button (since it's dynamically created)
@@ -710,6 +744,9 @@
                 document.body.classList.remove('modal-open');
                 editingNoteId = null;
                 currentTags = [];
+                if (currentEditor) {
+                    currentEditor = null;
+                }
             }
 
             // --- Function to render tags ---
@@ -750,12 +787,18 @@
 
             // --- Event Handlers ---
             async function handleSaveNote() {
-                const notesInput = document.getElementById('mindNotesInput');
-                if (!editingNoteId || !notesInput) return;
+                if (!editingNoteId) return;
 
                 const noteToUpdate = notes.find(n => n.id === editingNoteId);
                 const title = noteToUpdate.title; // Title is not editable in this view
-                const content = notesInput.value;
+                let content;
+                if (currentEditor) {
+                    const html = currentEditor.root.innerHTML;
+                    const turndownService = new TurndownService();
+                    content = turndownService.turndown(html);
+                } else {
+                    content = document.getElementById('mindNotesInput') ? document.getElementById('mindNotesInput').value : noteToUpdate.content;
+                }
 
                 try {
                     const result = await api.updateNote(editingNoteId, title, content, currentTags);

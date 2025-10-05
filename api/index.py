@@ -855,20 +855,11 @@ def update_note(note_id):
                 params.append(note_type)
                 update_fields.append("metadata = %s")
                 params.append(json.dumps(metadata) if metadata else None)
-                # Set TLDR placeholder when content changes
-                tldr_placeholder = "Generating summary..."
-                update_fields.append("tldr = %s")
-                params.append(tldr_placeholder)
                 # If content is updated but tags not provided, re-extract tags
                 if tags is None:
                     extracted_tags = extract_tags(content)
                     update_fields.append("tags = %s")
                     params.append(json.dumps(extracted_tags) if extracted_tags else '[]')
-
-                # Start background TLDR generation
-                thread = threading.Thread(target=background_generate_tldr, args=(str(note_id), content, title, current_user.id))
-                thread.daemon = True
-                thread.start()
 
             if tags is not None:
                 update_fields.append("tags = %s")
