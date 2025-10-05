@@ -1108,9 +1108,12 @@
                     openCreateModal();
                 }
                 if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
-                    // Check if we're not in an input/textarea to avoid interfering with normal paste
+                    // Check if we're not in an editable element (input, textarea, or contenteditable)
                     const activeElement = document.activeElement;
-                    if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                    const isEditable = activeElement.tagName === 'INPUT' ||
+                                       activeElement.tagName === 'TEXTAREA' ||
+                                       activeElement.contentEditable === 'true';
+                    if (!isEditable) {
                         e.preventDefault();
                         // Create note directly from clipboard content in background
                         (async () => {
