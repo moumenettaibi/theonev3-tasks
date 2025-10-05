@@ -23,10 +23,25 @@
             </div>
         </header>
 
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search notes..." class="search-input">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                    <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+
         <div id="notesContainer" class="notes-grid">
             <!-- Notes will be dynamically inserted here -->
         </div>
 
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="notification-toast">
+        <span id="notificationText"></span>
     </div>
 
     <!-- Floating Action Button -->
@@ -47,11 +62,11 @@
     <!-- New Note Creation Modal -->
     <div class="modal" id="createNoteModal">
         <div class="modal-content-create">
-            <h2>Create a New Note</h2>
+            <h2>New Note</h2>
             <form id="createNoteForm">
                 <div class="form-group">
-                    <label for="newNoteTitle">Title</label>
-                    <input type="text" id="newNoteTitle" placeholder="Enter a title for your note" required>
+                    <label for="newNoteTitle">Title (optional)</label>
+                    <input type="text" id="newNoteTitle" placeholder="Enter a title for your note">
                 </div>
                 <div class="form-group">
                     <label for="newNoteContent">Content (Markdown supported)</label>
@@ -59,12 +74,13 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" id="cancelCreateBtn" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Note</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
@@ -76,11 +92,151 @@
             const cancelCreateBtn = document.getElementById('cancelCreateBtn');
             const appDropdown = document.getElementById('appDropdown');
             const logo = document.querySelector('.logo');
+            const searchInput = document.getElementById('searchInput');
 
             // State
             let notes = [];
             let editingNoteId = null;
             let currentTags = [];
+            let searchTerm = '';
+
+            // Notification functions
+            function showNotification(message, duration = 2000) {
+                const toast = document.getElementById('notificationToast');
+                const text = document.getElementById('notificationText');
+                text.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+
+            // Local storage functions
+            function saveNotesToCache(notes) {
+                try {
+                    localStorage.setItem('cached_notes', JSON.stringify(notes));
+                    localStorage.setItem('cache_timestamp', Date.now().toString());
+                } catch (e) {
+                    console.log('Failed to save notes to cache:', e);
+                }
+            }
+
+            function loadNotesFromCache() {
+                try {
+                    const cached = localStorage.getItem('cached_notes');
+                    const timestamp = localStorage.getItem('cache_timestamp');
+                    if (cached && timestamp) {
+                        // Check if cache is less than 24 hours old
+                        const age = Date.now() - parseInt(timestamp);
+                        if (age < 24 * 60 * 60 * 1000) { // 24 hours
+                            return JSON.parse(cached);
+                        } else {
+                            // Clear old cache
+                            localStorage.removeItem('cached_notes');
+                            localStorage.removeItem('cache_timestamp');
+                        }
+                    }
+                } catch (e) {
+                    console.log('Failed to load notes from cache:', e);
+                }
+                return null;
+            }
+
+            // Socket.IO setup
+            const socket = io();
+            socket.on('tldr_generated', (data) => {
+                // Update the note in our local state
+                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].tldr = data.tldr;
+                    saveNotesToCache(notes); // Update cache
+                }
+
+                // If we're currently viewing this note in the modal, update it
+                if (editingNoteId === data.note_id) {
+                    const tldrElement = document.querySelector('.tldr-content');
+                    const loadingElement = document.querySelector('.tldr-loading');
+                    if (tldrElement) {
+                        tldrElement.textContent = data.tldr;
+                        tldrElement.classList.remove('generating');
+                    }
+                    if (loadingElement) {
+                        loadingElement.remove();
+                    }
+                }
+            });
+
+            socket.on('tldr_error', (data) => {
+                // Update the note in our local state
+                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].tldr = data.error;
+                }
+
+                // If we're currently viewing this note in the modal, update it
+                if (editingNoteId === data.note_id) {
+                    const tldrElement = document.querySelector('.tldr-content');
+                    const loadingElement = document.querySelector('.tldr-loading');
+                    if (tldrElement) {
+                        tldrElement.textContent = data.error;
+                        tldrElement.classList.remove('generating');
+                    }
+                    if (loadingElement) {
+                        loadingElement.remove();
+                    }
+                }
+            });
+
+            socket.on('title_generated', (data) => {
+                // Update the note in our local state
+                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].title = data.title;
+                    saveNotesToCache(notes); // Update cache
+                }
+
+                // Update the card title if visible
+                const card = document.querySelector(`.note-card[data-note-id="${data.note_id}"]`);
+                if (card) {
+                    const titleElement = card.querySelector('.note-card-title');
+                    if (titleElement) {
+                        titleElement.textContent = data.title;
+                    }
+                }
+
+                // If we're currently viewing this note in the modal, update the title
+                if (editingNoteId === data.note_id) {
+                    const titleElement = document.querySelector('.sidebar-header .title');
+                    if (titleElement) {
+                        titleElement.textContent = data.title;
+                    }
+                }
+            });
+
+            socket.on('title_error', (data) => {
+                // Update the note in our local state
+                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                if (noteIndex !== -1) {
+                    notes[noteIndex].title = data.error;
+                }
+
+                // Update the card title if visible
+                const card = document.querySelector(`.note-card[data-note-id="${data.note_id}"]`);
+                if (card) {
+                    const titleElement = card.querySelector('.note-card-title');
+                    if (titleElement) {
+                        titleElement.textContent = data.error;
+                    }
+                }
+
+                // If we're currently viewing this note in the modal, update the title
+                if (editingNoteId === data.note_id) {
+                    const titleElement = document.querySelector('.sidebar-header .title');
+                    if (titleElement) {
+                        titleElement.textContent = data.error;
+                    }
+                }
+            });
 
             // --- API Communication ---
             const api = {
@@ -88,16 +244,62 @@
                 createNote: async (title, content) => (await fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content }) })).json(),
                 updateNote: async (id, title, content, tags) => (await fetch(`/api/notes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, tags }) })).json(),
                 deleteNote: async (id) => (await fetch(`/api/notes/${id}`, { method: 'DELETE' })).json(),
+                generateTldr: async (id) => (await fetch(`/api/notes/${id}/generate-tldr`, { method: 'POST' })).json(),
             };
+
+            // --- Search and Filtering ---
+            function highlightSearchTerm(text, searchTerm) {
+                if (!searchTerm.trim()) return text;
+                const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return text.replace(regex, '<mark>$1</mark>');
+            }
+
+            function getFilteredNotes() {
+                if (!searchTerm.trim()) {
+                    return notes;
+                }
+
+                const term = searchTerm.toLowerCase();
+                return notes.filter(note => {
+                    // Search in title
+                    if (note.title && note.title.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    // Search in content
+                    if (note.content && note.content.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    // Search in tags
+                    if (note.tags && Array.isArray(note.tags)) {
+                        if (note.tags.some(tag => tag.toLowerCase().includes(term))) {
+                            return true;
+                        }
+                    }
+                    // Search in note type
+                    if (note.note_type && note.note_type.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    // Search in TLDR
+                    if (note.tldr && note.tldr.toLowerCase().includes(term)) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
 
             // --- Main Note Grid Rendering ---
             function renderNotes() {
+                const filteredNotes = getFilteredNotes();
                 notesContainer.innerHTML = '';
-                if (notes.length === 0) {
-                    notesContainer.innerHTML = '<p style="text-align:center; color:#888; grid-column: 1 / -1;">You have no notes yet. Click the + button to create one!</p>';
+                if (filteredNotes.length === 0) {
+                    if (searchTerm.trim()) {
+                        notesContainer.innerHTML = `<p style="text-align:center; color:#888; grid-column: 1 / -1;">No notes found matching "${searchTerm}".</p>`;
+                    } else {
+                        notesContainer.innerHTML = '<p style="text-align:center; color:#888; grid-column: 1 / -1;">You have no notes yet. Click the + button to create one!</p>';
+                    }
                     return;
                 }
-                notes.forEach(note => {
+                filteredNotes.forEach(note => {
                     const card = document.createElement('div');
                     card.className = 'note-card';
                     card.dataset.noteId = note.id;
@@ -116,7 +318,7 @@
                             cardContent = `
                                 <img src="${posterUrl}" alt="Poster for ${title}" class="note-card-poster" loading="lazy">
                                 <div class="note-card-overlay">
-                                    <h3 class="note-card-title">${title}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(title, searchTerm)}</h3>
                                     <p class="note-card-meta">${year}</p>
                                 </div>`;
                             break;
@@ -124,18 +326,22 @@
                             card.classList.add('wikipedia-card');
                             cardContent = `
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/Wikipedia-logo-v2.svg" alt="Wikipedia Logo" class="wikipedia-logo">
-                                <h3 class="note-card-title">${note.metadata?.details?.title || note.title}</h3>`;
+                                <h3 class="note-card-title">${highlightSearchTerm(note.metadata?.details?.title || note.title, searchTerm)}</h3>`;
                             break;
                         case 'YouTube':
                              card.classList.add('youtube-card');
                              const videoId = note.metadata?.video_id;
                              const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://via.placeholder.com/500x281.png?text=No+Thumbnail';
+                             const videoTitle = note.metadata?.details?.title || 'YouTube Video';
                              cardContent = `
                                 <img src="${thumbnailUrl}" alt="YouTube Thumbnail" class="youtube-thumbnail" loading="lazy">
                                 <div class="youtube-overlay">
                                 </div>
                                 <div class="play-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                </div>
+                                <div class="youtube-title-overlay">
+                                    <h3 class="note-card-title">${highlightSearchTerm(videoTitle, searchTerm)}</h3>
                                 </div>`;
                             break;
                         case 'Reddit':
@@ -148,13 +354,13 @@
                                         <img src="/static/Reddit_Logo.webp" alt="Reddit Snoo" class="snoo-logo-grid">
                                     </div>
                                     <div class="reddit-card-grid-bottom">
-                                        <h3 class="note-card-title">${redditDetails.title}</h3>
+                                        <h3 class="note-card-title">${highlightSearchTerm(redditDetails.title, searchTerm)}</h3>
                                         <p class="reddit-subreddit-grid">r/${subreddit}</p>
                                     </div>
                                 `;
                             } else {
                                 cardContent = `
-                                    <h3 class="note-card-title">${note.title}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(note.title, searchTerm)}</h3>
                                     <div class="note-card-content">Could not load Reddit post.</div>
                                 `;
                             }
@@ -168,20 +374,20 @@
                                         <img src="/static/x-logo.png" alt="X Logo" class="x-logo-grid">
                                     </div>
                                     <div class="x-card-grid-bottom">
-                                        <h3 class="note-card-title">Tweet by @${xDetails.author_name}</h3>
+                                        <h3 class="note-card-title">${highlightSearchTerm(`Tweet by @${xDetails.author_name}`, searchTerm)}</h3>
                                     </div>
                                 `;
                             } else {
                                 cardContent = `
-                                    <h3 class="note-card-title">${note.title}</h3>
+                                    <h3 class="note-card-title">${highlightSearchTerm(note.title, searchTerm)}</h3>
                                     <div class="note-card-content">Could not load X post.</div>
                                 `;
                             }
                             break;
                         default: // Standard Note
                             cardContent = `
-                                <h3 class="note-card-title">${note.title}</h3>
-                                <div class="note-card-content">${marked.parse(note.content || '')}</div>`;
+                                <h3 class="note-card-title">${highlightSearchTerm(note.title || '', searchTerm)}</h3>
+                                <div class="note-card-content">${marked.parse(highlightSearchTerm(note.content || '', searchTerm))}</div>`;
                             break;
                     }
                     card.innerHTML = cardContent;
@@ -223,6 +429,7 @@
             function openNoteModal(note) {
                 editingNoteId = note ? note.id : null;
                 currentTags = note ? (note.tags || []) : [];
+                document.body.classList.add('modal-open');
                 const modalContent = document.getElementById('noteModalContent');
                 modalContent.innerHTML = ''; // Clear previous content
 
@@ -235,7 +442,7 @@
 
                 // --- Populate Main Content (Left Panel) ---
                 let mainContentHTML = '';
-                let url = null;
+                let url = note.metadata?.url || (note.metadata?.details?.id ? `https://www.themoviedb.org/${note.note_type === 'Movie' ? 'movie' : 'tv'}/${note.metadata.details.id}` : null);
                 let useDefaultSidebar = true; // Flag to control sidebar generation
 
                 switch (note.note_type) {
@@ -243,7 +450,6 @@
                     case 'TV Show':
                         const posterPath = note.metadata?.details?.poster_path;
                         const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w780${posterPath}` : 'https://via.placeholder.com/500x750.png?text=No+Image';
-                        url = note.metadata?.details?.id ? `https://www.themoviedb.org/${note.note_type === 'Movie' ? 'movie' : 'tv'}/${note.metadata.details.id}` : note.metadata?.url;
                         mainContentHTML = `
                             <div class="media-preview-container">
                                 <img src="${posterUrl}" loading="lazy" class="media-poster-preview" alt="Poster">
@@ -333,20 +539,31 @@
                 // --- Populate Sidebar (Right Panel) ---
                 if (useDefaultSidebar) {
                     const title = note.metadata?.details?.title || note.metadata?.details?.name || note.title;
-                    const tldr = note.metadata?.details?.overview || note.metadata?.details?.summary || 'No summary available.';
-                    
+                    const tldr = note.tldr || note.metadata?.details?.overview || note.metadata?.details?.summary || 'No summary available.';
+                    const isGenerating = note.tldr === 'Generating summary...';
+
+                    // Determine source text based on URL
+                    let sourceText = note.note_type;
+                    if (url) {
+                        if (url.includes('letterboxd.com')) sourceText = 'Letterboxd';
+                        else if (url.includes('serializd.com')) sourceText = 'Serializd';
+                        else if (url.includes('themoviedb.org')) sourceText = 'TMDB';
+                    }
+
                     sidebar.innerHTML = `
                         <div class="sidebar-header">
                             <h2 class="title">${title}</h2>
                             <p class="meta">
                                 <span class="date">${timeAgo(note.created_at)}</span>
-                                ${url ? `<a href="${url}" target="_blank" class="source-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${note.note_type === 'Movie' || note.note_type === 'TV Show' ? 'TMDB' : note.note_type}</a>` : `<span class="source">${note.note_type === 'Movie' || note.note_type === 'TV Show' ? 'TMDB' : note.note_type}</span>`}
+                                ${url ? `<a href="${url}" target="_blank" class="source-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${sourceText}</a>` : `<span class="source">${sourceText}</span>`}
                             </p>
                         </div>
 
                         <div class="sidebar-section">
                             <h3 class="section-title">TLDR</h3>
-                            <p class="tldr-content">${tldr}</p>
+                            <p class="tldr-content ${isGenerating ? 'generating' : ''}">${tldr}</p>
+                            ${isGenerating ? '<div class="tldr-loading"><div class="loading-spinner"></div> Generating AI summary...</div>' : ''}
+                            ${!isGenerating && (tldr === 'No summary available.' || !tldr) ? `<button class="generate-tldr-btn" data-note-id="${note.id}">Generate AI Summary</button>` : ''}
                         </div>
 
                         <div class="sidebar-section">
@@ -384,6 +601,41 @@
                         handleSaveNote();
                     });
                 }
+
+                // Event delegation for generate TLDR button (since it's dynamically created)
+                modalContent.addEventListener('click', async (e) => {
+                    if (e.target.classList.contains('generate-tldr-btn')) {
+                        const button = e.target;
+                        const noteId = button.dataset.noteId;
+
+                        // Disable button immediately to prevent multiple clicks
+                        button.disabled = true;
+                        button.textContent = 'Generating...';
+                        button.style.opacity = '0.6';
+
+                        try {
+                            // Call API to generate TLDR
+                            await api.generateTldr(noteId);
+
+                            // Update UI to show loading state
+                            const tldrContent = modalContent.querySelector('.tldr-content');
+                            const loadingDiv = document.createElement('div');
+                            loadingDiv.className = 'tldr-loading';
+                            loadingDiv.innerHTML = '<div class="loading-spinner"></div> Generating AI summary...';
+
+                            tldrContent.classList.add('generating');
+                            tldrContent.textContent = '';
+                            button.replaceWith(loadingDiv);
+
+                        } catch (error) {
+                            console.error('Generate TLDR failed:', error);
+                            // Re-enable button on error
+                            button.disabled = false;
+                            button.textContent = 'Generate AI Summary';
+                            button.style.opacity = '1';
+                        }
+                    }
+                });
 
                 // Add event listener for adding tags
                 const tagsContainer = document.querySelector('.tags-container');
@@ -446,7 +698,16 @@
             }
             
             function closeNoteModal() {
+                // Stop any playing YouTube videos before closing
+                const modalContent = document.getElementById('noteModalContent');
+                const iframe = modalContent.querySelector('iframe');
+                if (iframe && iframe.src && iframe.src.includes('youtube.com')) {
+                    // Replace src with about:blank to stop the video completely
+                    iframe.src = 'about:blank';
+                }
+
                 noteModal.style.display = 'none';
+                document.body.classList.remove('modal-open');
                 editingNoteId = null;
                 currentTags = [];
             }
@@ -500,6 +761,7 @@
                     const result = await api.updateNote(editingNoteId, title, content, currentTags);
                     const index = notes.findIndex(n => n.id === editingNoteId);
                     if (index !== -1) notes[index] = result.note;
+                    saveNotesToCache(notes); // Update cache
                     renderNotes(); // Refresh grid in case content changed
                     // Removed alert for auto-save
                 } catch (error) {
@@ -513,6 +775,7 @@
                 try {
                     await api.deleteNote(editingNoteId);
                     notes = notes.filter(n => n.id !== editingNoteId);
+                    saveNotesToCache(notes); // Update cache
                     renderNotes();
                     closeNoteModal();
                 } catch (error) {
@@ -556,32 +819,36 @@
                 if (appDropdown.style.display === 'block') appDropdown.style.display = 'none';
             });
 
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                renderNotes();
+            });
+
             // --- Create Modal Functions & Handlers ---
             function openCreateModal() {
                 createNoteForm.reset(); // Clear form from previous use
+                document.body.classList.add('modal-open');
                 createNoteModal.style.display = 'flex';
             }
 
             function closeCreateModal() {
                 createNoteModal.style.display = 'none';
+                document.body.classList.remove('modal-open');
             }
 
             async function handleCreateNote(e) {
                 e.preventDefault(); // Prevent default form submission
                 const titleInput = document.getElementById('newNoteTitle');
                 const contentInput = document.getElementById('newNoteContent');
-                
+
                 const title = titleInput.value.trim();
                 const content = contentInput.value.trim();
-
-                if (!title) {
-                    alert('Please enter a title for your note.');
-                    return;
-                }
 
                 try {
                     const newNote = await api.createNote(title, content);
                     notes.unshift(newNote.note); // Add to the beginning of the array
+                    saveNotesToCache(notes); // Update cache
                     renderNotes();
                     closeCreateModal();
                 } catch (error) {
@@ -602,21 +869,85 @@
             // --- Initialization ---
             async function init() {
                 try {
-                    notes = await api.getNotes();
+                    // Load cached notes first for instant display
+                    const cachedNotes = loadNotesFromCache();
+                    if (cachedNotes) {
+                        notes = cachedNotes;
+                        renderNotes();
+                    }
+
+                    // Then fetch fresh data from API
+                    const freshNotes = await api.getNotes();
+                    notes = freshNotes;
+                    saveNotesToCache(notes);
                     renderNotes();
                 } catch (error) {
                     console.error('Initialization failed:', error);
-                    notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
+                    // If API fails but we have cache, keep showing cached notes
+                    if (notes.length === 0) {
+                        notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
+                    }
                 }
             }
 
             init();
 
+            // --- Scroll-based search position ---
+            window.addEventListener('scroll', () => {
+                const searchSection = document.querySelector('.search-section');
+                if (window.scrollY > 0) {
+                    searchSection.style.top = '1rem';
+                } else {
+                    searchSection.style.top = '5rem';
+                }
+            });
+
             // --- Keyboard Shortcuts ---
-            document.addEventListener('keydown', (e) => {
+            document.addEventListener('keydown', async (e) => {
+                if (e.altKey && e.code === 'KeyS') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
                 if (e.altKey && e.code === 'KeyN') {
                     e.preventDefault();
+                    // Close any open modals first
+                    if (noteModal.style.display === 'flex') {
+                        closeNoteModal();
+                    } else if (createNoteModal.style.display === 'flex') {
+                        closeCreateModal();
+                    }
                     openCreateModal();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
+                    // Check if we're not in an input/textarea to avoid interfering with normal paste
+                    const activeElement = document.activeElement;
+                    if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        // Create note directly from clipboard content in background
+                        (async () => {
+                            try {
+                                const text = await navigator.clipboard.readText();
+                                if (text.trim()) {
+                                    showNotification('Creating note from clipboard...');
+                                    const newNote = await api.createNote('', text);
+                                    notes.unshift(newNote.note); // Add to the beginning of the array
+                                    saveNotesToCache(notes); // Update cache
+                                    renderNotes();
+                                    showNotification('Note created successfully!');
+                                }
+                            } catch (err) {
+                                console.error('Failed to create note from clipboard:', err);
+                                showNotification('Failed to create note from clipboard');
+                            }
+                        })();
+                    }
+                }
+                if (e.key === 'Escape') {
+                    if (noteModal.style.display === 'flex') {
+                        closeNoteModal();
+                    } else if (createNoteModal.style.display === 'flex') {
+                        closeCreateModal();
+                    }
                 }
             });
         });

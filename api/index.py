@@ -12,6 +12,8 @@ import psycopg2.extras
 from psycopg2.pool import SimpleConnectionPool
 from contextlib import contextmanager
 from datetime import timedelta, date # --- MODIFIED: Imported timedelta
+import threading
+from urllib.parse import quote
 
 from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -19,6 +21,9 @@ from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+
 load_dotenv()
 
 # --- App & SocketIO Setup ---
@@ -39,6 +44,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 
 
 socketio = SocketIO(app, async_mode="threading")
+
+# Configure the Gemini API
+client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY"),
+)
+print(f"DEBUG - Gemini API key loaded: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}")
 
 # --- Database Connection Pool ---
 try:
@@ -131,6 +142,12 @@ def run_migrations():
             if cur.fetchone() is None:
                 cur.execute("ALTER TABLE notes ADD COLUMN tags JSONB;")
                 print(" -> Added 'tags' column to 'notes' table.")
+
+            # Add tldr column if it doesn't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='notes' AND column_name='tldr';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE notes ADD COLUMN tldr TEXT;")
+                print(" -> Added 'tldr' column to 'notes' table.")
 
             conn.commit()
             print("Schema check complete.")
@@ -344,6 +361,31 @@ def extract_tags(content):
     """Extracts hashtags from content."""
     return list(set(re.findall(r'#(\w+)', content)))
 
+def search_tmdb_by_title(media_type, title):
+    """
+    Searches TMDb for a movie or TV show by its title and returns the ID of the first result.
+    """
+    if not all([media_type, title, TMDB_API_KEY]):
+        return None
+
+    encoded_title = quote(title)
+    url = f"{TMDB_API_BASE_URL}/search/{media_type}?api_key={TMDB_API_KEY}&query={encoded_title}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        results = response.json().get('results', [])
+        if results:
+            tmdb_id = results[0].get('id')
+            print(f"TMDb search for '{title}' found ID: {tmdb_id}")
+            return tmdb_id
+        else:
+            print(f"TMDb search for '{title}' returned no results.")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Error searching TMDb for title '{title}': {e}")
+        return None
+
 def fetch_tmdb_data(media_type, tmdb_id):
     """Fetches detailed data for a movie or TV show from the TMDb API."""
     if not all([media_type, tmdb_id, TMDB_API_KEY]):
@@ -363,6 +405,8 @@ def analyze_note_content(content):
     """
     tmdb_movie_pattern = re.compile(r"""themoviedb\.org/movie/(\d+)""")
     tmdb_tv_pattern   = re.compile(r"""themoviedb\.org/tv/(\d+)""")
+    letterboxd_pattern = re.compile(r'https?://letterboxd\.com/film/([^/]+)/?')
+    serializd_pattern = re.compile(r'https?://www\.serializd\.com/show/([^/]+)/?')
     wikipedia_pattern = re.compile(r"""https://(?:([\w-]+)\.)?wikipedia\.org/wiki/([^/\s()"'*]+)""")
     youtube_pattern   = re.compile(r"""(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]{11})""")
     reddit_pattern = re.compile(r"""reddit\.com/r/(\w+)/comments/(\w+)""")
@@ -386,6 +430,31 @@ def analyze_note_content(content):
             url = f"https://www.themoviedb.org/tv/{tmdb_id}"
             details['url'] = url
             return 'TV Show', {'tmdb_id': tmdb_id, 'details': details, 'url': url}
+
+    letterboxd_match = letterboxd_pattern.search(content)
+    if letterboxd_match:
+        title_slug = letterboxd_match.group(1)
+        search_title = title_slug.replace('-', ' ')
+        tmdb_id = search_tmdb_by_title('movie', search_title)
+        if tmdb_id:
+            details = fetch_tmdb_data('movie', tmdb_id)
+            if details:
+                url = f"https://letterboxd.com/film/{title_slug}"
+                details['url'] = url
+                return 'Movie', {'tmdb_id': tmdb_id, 'details': details, 'url': url}
+
+    serializd_match = serializd_pattern.search(content)
+    if serializd_match:
+        slug_with_id = serializd_match.group(1)
+        title_slug = re.sub(r'-\d+$', '', slug_with_id)
+        search_title = title_slug.replace('-', ' ')
+        tmdb_id = search_tmdb_by_title('tv', search_title)
+        if tmdb_id:
+            details = fetch_tmdb_data('tv', tmdb_id)
+            if details:
+                url = f"https://www.serializd.com/show/{slug_with_id}"
+                details['url'] = url
+                return 'TV Show', {'tmdb_id': tmdb_id, 'details': details, 'url': url}
 
     wiki_match = wikipedia_pattern.search(content)
     if wiki_match:
@@ -478,6 +547,211 @@ def analyze_note_content(content):
     return 'Standard', None
 
 
+def generate_title(content):
+    """
+    Generate a short to medium title for the given note content using AI.
+    """
+    if not content or not content.strip():
+        return "Untitled Note"
+
+    if not os.getenv("GEMINI_API_KEY"):
+        return "AI Title Unavailable"
+
+    try:
+        prompt = f"""Generate a short title (3 minimum - 7 words max) for the following note content. Make it concise and descriptive without any markdwon things if you have not access to a link or anything like that don't write Content inaccessible; please provide text.
+just write the titel based on that link text :
+
+Content: {content}
+
+Title:"""
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(text=prompt),
+                ],
+            ),
+        ]
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=contents,
+        )
+
+        title = response.text.strip()
+        return title if title else "Generated Title"
+
+    except Exception as e:
+        print(f"Error generating title: {e}")
+        return "Generated Title"
+
+
+def generate_tldr(content, title=""):
+    """
+    Generate a TLDR summary for the given content using AI.
+    """
+    if not content or not content.strip():
+        return "No content to summarize."
+
+    if not os.getenv("GEMINI_API_KEY"):
+        return "AI summary unavailable - API key not configured."
+
+    try:
+        prompt = f"""Please provide a concise TLDR summary (1-2 sentences max 3 if it should be) don't begin with TLDR: or anything like that for the following note:
+
+Title: {title}
+Content: {content}
+
+TLDR:"""
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(text=prompt),
+                ],
+            ),
+        ]
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=contents,
+        )
+
+        tldr = response.text.strip()
+        return tldr if tldr else "Summary generation failed."
+
+    except Exception as e:
+        print(f"Error generating TLDR: {e}")
+        return "Summary generation failed."
+
+
+def background_generate_tldr(note_id, content, title, user_id):
+    """
+    Background task to generate TLDR and update the database.
+    """
+    try:
+        # Generate TLDR
+        tldr = generate_tldr(content, title)
+
+        # Check if generation failed
+        failure_messages = [
+            "No content to summarize.",
+            "AI summary unavailable - API key not configured.",
+            "Summary generation failed."
+        ]
+
+        if tldr in failure_messages:
+            # Set TLDR to NULL in database and emit error
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE notes SET tldr = NULL WHERE id = %s AND user_id = %s",
+                        (note_id, user_id)
+                    )
+                    conn.commit()
+
+            socketio.emit('tldr_error', {
+                'note_id': str(note_id),
+                'error': tldr  # Send the failure message to user
+            }, to=user_id)
+            print(f"TLDR generation failed for note {note_id}: {tldr}")
+        else:
+            # Update database with successful TLDR
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE notes SET tldr = %s WHERE id = %s AND user_id = %s",
+                        (tldr, note_id, user_id)
+                    )
+                    conn.commit()
+
+            # Emit WebSocket event to notify clients
+            socketio.emit('tldr_generated', {
+                'note_id': str(note_id),
+                'tldr': tldr
+            }, to=user_id)
+
+            print(f"TLDR generated for note {note_id}")
+
+    except Exception as e:
+        print(f"Error in background TLDR generation for note {note_id}: {e}")
+        # Emit error event
+        socketio.emit('tldr_error', {
+            'note_id': str(note_id),
+            'error': 'Failed to generate summary'
+        }, to=user_id)
+
+
+def background_generate_title(note_id, content, user_id):
+    """
+    Background task to generate title and update the database.
+    """
+    try:
+        # Generate title
+        title = generate_title(content)
+
+        # Check if generation failed
+        failure_messages = [
+            "Untitled Note",
+            "AI Title Unavailable",
+            "Generated Title"
+        ]
+
+        if title in failure_messages:
+            # Set title to "Untitled Note" in database
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE notes SET title = %s WHERE id = %s AND user_id = %s",
+                        ("Untitled Note", note_id, user_id)
+                    )
+                    conn.commit()
+
+            socketio.emit('title_error', {
+                'note_id': str(note_id),
+                'error': title
+            }, to=user_id)
+            print(f"Title generation failed for note {note_id}: {title}")
+        else:
+            # Update database with successful title
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE notes SET title = %s WHERE id = %s AND user_id = %s",
+                        (title, note_id, user_id)
+                    )
+                    conn.commit()
+
+            # Emit WebSocket event to notify clients
+            socketio.emit('title_generated', {
+                'note_id': str(note_id),
+                'title': title
+            }, to=user_id)
+
+            print(f"Title generated for note {note_id}")
+
+    except Exception as e:
+        print(f"Error in background title generation for note {note_id}: {e}")
+        # Set to default title
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE notes SET title = %s WHERE id = %s AND user_id = %s",
+                        ("Untitled Note", note_id, user_id)
+                    )
+                    conn.commit()
+        except Exception as db_e:
+            print(f"Error updating title in DB: {db_e}")
+
+        socketio.emit('title_error', {
+            'note_id': str(note_id),
+            'error': 'Failed to generate title'
+        }, to=user_id)
+
+
 # --- Notes API Routes ---
 
 @app.route('/api/notes', methods=['GET'])
@@ -486,7 +760,7 @@ def get_notes():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, title, content, created_at, updated_at, note_type, metadata, tags FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
+                "SELECT id, title, content, created_at, updated_at, note_type, metadata, tags, tldr FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
                 (current_user.id,)
             )
             notes = cur.fetchall()
@@ -499,10 +773,8 @@ def get_notes():
 @login_required
 def create_note():
     data = request.get_json()
-    title = data.get('title')
+    title = data.get('title', '').strip()
     content = data.get('content', '')
-    if not title:
-        return jsonify({'success': False, 'message': 'Title is required.'}), 400
 
     note_type, metadata = analyze_note_content(content)
     tags = extract_tags(content)
@@ -514,20 +786,39 @@ def create_note():
         elif metadata['details'].get('name'):
             title = metadata['details']['name']
 
+    # Generate title if not provided
+    if not title:
+        title = "Generating title..."
+
+    # Set initial TLDR placeholder
+    tldr_placeholder = "Generating summary..."
+
     new_note_id = str(uuid.uuid4())
 
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
-                INSERT INTO notes (id, user_id, title, content, note_type, metadata, tags)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags;
+                INSERT INTO notes (id, user_id, title, content, note_type, metadata, tags, tldr)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags, tldr;
                 """,
-                (new_note_id, current_user.id, title, content, note_type, json.dumps(metadata) if metadata else None, json.dumps(tags) if tags else '[]')
+                (new_note_id, current_user.id, title, content, note_type, json.dumps(metadata) if metadata else None, json.dumps(tags) if tags else '[]', tldr_placeholder)
             )
             new_note = cur.fetchone()
             conn.commit()
+
+    # Start background TLDR generation
+    if content and content.strip():
+        thread = threading.Thread(target=background_generate_tldr, args=(new_note_id, content, title, current_user.id))
+        thread.daemon = True
+        thread.start()
+
+    # Start background title generation if needed
+    if title == "Generating title...":
+        thread = threading.Thread(target=background_generate_title, args=(new_note_id, content, current_user.id))
+        thread.daemon = True
+        thread.start()
 
     new_note['created_at'] = new_note['created_at'].isoformat()
     new_note['updated_at'] = new_note['updated_at'].isoformat()
@@ -564,11 +855,20 @@ def update_note(note_id):
                 params.append(note_type)
                 update_fields.append("metadata = %s")
                 params.append(json.dumps(metadata) if metadata else None)
+                # Set TLDR placeholder when content changes
+                tldr_placeholder = "Generating summary..."
+                update_fields.append("tldr = %s")
+                params.append(tldr_placeholder)
                 # If content is updated but tags not provided, re-extract tags
                 if tags is None:
                     extracted_tags = extract_tags(content)
                     update_fields.append("tags = %s")
                     params.append(json.dumps(extracted_tags) if extracted_tags else '[]')
+
+                # Start background TLDR generation
+                thread = threading.Thread(target=background_generate_tldr, args=(str(note_id), content, title, current_user.id))
+                thread.daemon = True
+                thread.start()
 
             if tags is not None:
                 update_fields.append("tags = %s")
@@ -576,7 +876,7 @@ def update_note(note_id):
 
             update_fields.append("updated_at = CURRENT_TIMESTAMP")
 
-            query = f"UPDATE notes SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags;"
+            query = f"UPDATE notes SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, content, created_at, updated_at, note_type, metadata, tags, tldr;"
             params.append(str(note_id))
 
             cur.execute(query, tuple(params))
@@ -600,6 +900,44 @@ def delete_note(note_id):
                 return jsonify({'success': False, 'message': 'Note not found or you do not have permission to delete it.'}), 404
             conn.commit()
     return jsonify({'success': True, 'message': 'Note deleted successfully.'})
+
+@app.route('/api/notes/<uuid:note_id>/generate-tldr', methods=['POST'])
+@login_required
+def generate_note_tldr(note_id):
+    # Check if note exists and belongs to user
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, title, content, tldr FROM notes WHERE id = %s AND user_id = %s;",
+                (str(note_id), current_user.id)
+            )
+            note = cur.fetchone()
+
+    if not note:
+        return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
+
+    # Check if TLDR generation is already in progress or completed
+    if note['tldr'] == 'Generating summary...':
+        return jsonify({'success': False, 'message': 'TLDR generation already in progress.'}), 409
+    elif note['tldr'] and note['tldr'] != 'No summary available.' and not note['tldr'].startswith('AI summary unavailable'):
+        return jsonify({'success': False, 'message': 'TLDR already exists for this note.'}), 409
+
+    # Set placeholder and start background generation
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE notes SET tldr = %s WHERE id = %s AND user_id = %s",
+                ("Generating summary...", str(note_id), current_user.id)
+            )
+            conn.commit()
+
+    # Start background TLDR generation
+    if note['content'] and note['content'].strip():
+        thread = threading.Thread(target=background_generate_tldr, args=(str(note_id), note['content'], note['title'], current_user.id))
+        thread.daemon = True
+        thread.start()
+
+    return jsonify({'success': True, 'message': 'TLDR generation started.'})
 
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
@@ -633,4 +971,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5003, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=5004, allow_unsafe_werkzeug=True)

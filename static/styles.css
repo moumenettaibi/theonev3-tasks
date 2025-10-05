@@ -84,11 +84,10 @@ header {
 }
 
 .logo-container {
-    position: absolute;
+    position: fixed;
+    top: 1rem;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
+    z-index: 1002;
 }
 
 .logo {
