@@ -29,6 +29,19 @@
                     </div>
                 </div>
                 <h1 id="headerTitle"></h1>
+                <div class="profile-container">
+                    <button id="profileBtn" class="profile-btn">
+                        {% if profile_image %}
+                            <img src="{{ profile_image }}" alt="Profile" class="profile-img">
+                        {% else %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6 20c0-3.5 3-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        {% endif %}
+                    </button>
+                </div>
             </div>
             <div class="date-nav">
                 <span class="nav-arrow" id="prevDayBtn">‹</span>
@@ -155,16 +168,6 @@
                 <canvas id="weeklyPerformanceChart"></canvas>
             </div>
 
-            <!-- Data Management -->
-            <div class="data-management-card">
-                <h2>Data & Account</h2>
-                <div class="welcome-message" id="welcomeMessage"></div>
-                <div class="data-actions">
-                    <button id="importBtn">Import Data</button>
-                    <button id="exportBtn">Export Data</button>
-                    <button id="logoutBtn" class="btn-danger">Logout</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -224,6 +227,78 @@
                 <strong>End Date:</strong> <span id="habitEndDateDisplay">-</span>
             </div>
             <div class="modal-actions"><button id="cancelHabitGoalBtn">Cancel</button><button id="saveHabitGoalBtn">Save Goal</button></div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content profile-modal-content">
+            <div class="profile-header">
+                <h3>Profile Settings</h3>
+                <div class="current-profile-display">
+                    {% if profile_image %}
+                        <img src="{{ profile_image }}" alt="Current Profile" class="current-profile-img">
+                    {% else %}
+                        <div class="current-profile-placeholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6 20c0-3.5 3-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    {% endif %}
+                    <div class="profile-info">
+                        <div class="current-username">{{ username }}</div>
+                        <div class="current-email">{{ email or 'No email set' }}</div>
+                    </div>
+                </div>
+            </div>
+            <form id="profileForm" class="profile-form">
+                <div class="form-section">
+                    <h4>Profile Picture</h4>
+                    <div class="form-group">
+                        <label for="profileImageInput">Upload new image:</label>
+                        <input type="file" id="profileImageInput" accept="image/*">
+                        <small>Supported formats: JPG, PNG, GIF. Max size: 5MB</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Account Information</h4>
+                    <div class="form-group">
+                        <label for="usernameInput">Username:</label>
+                        <input type="text" id="usernameInput" value="{{ username }}" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="emailInput">Email:</label>
+                        <input type="email" id="emailInput" value="{{ email or '' }}" placeholder="Enter email address">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Security</h4>
+                    <div class="form-group">
+                        <label for="passwordInput">New Password:</label>
+                        <input type="password" id="passwordInput" placeholder="Enter new password (leave empty to keep current)">
+                        <small>Leave empty if you don't want to change your password</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Data & Account</h4>
+                    <div class="welcome-message" id="welcomeMessage"></div>
+                    <div class="data-actions">
+                        <button id="importBtn">Import Data</button>
+                        <button id="exportBtn">Export Data</button>
+                        <button id="logoutBtn" class="btn-danger">Logout</button>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelProfileBtn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -808,6 +883,56 @@
         deleteGroupModal.addEventListener('click', e => { if (e.target === deleteGroupModal) closeDeleteGroupModal(); });
         categoryModal.addEventListener('click', e => { if (e.target === categoryModal) closeCategoryModal(); });
         habitGoalModal.addEventListener('click', e => { if (e.target === habitGoalModal) closeHabitGoalModal(); });
+
+        // Profile Modal
+        const profileBtn = document.getElementById('profileBtn');
+        const profileModal = document.getElementById('profileModal');
+        const profileForm = document.getElementById('profileForm');
+        const cancelProfileBtn = document.getElementById('cancelProfileBtn');
+
+        profileBtn.addEventListener('click', () => {
+            profileModal.style.display = 'flex';
+        });
+
+        cancelProfileBtn.addEventListener('click', () => {
+            profileModal.style.display = 'none';
+            profileForm.reset();
+        });
+
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.style.display = 'none';
+                profileForm.reset();
+            }
+        });
+
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const imageFile = document.getElementById('profileImageInput').files[0];
+            if (imageFile) formData.append('profile_image', imageFile);
+            const username = document.getElementById('usernameInput').value;
+            if (username) formData.append('username', username);
+            const email = document.getElementById('emailInput').value;
+            if (email) formData.append('email', email);
+            const password = document.getElementById('passwordInput').value;
+            if (password) formData.append('password', password);
+
+            try {
+                const response = await fetch('/api/profile', { method: 'POST', body: formData });
+                if (response.ok) {
+                    alert('Profile updated successfully!');
+                    profileModal.style.display = 'none';
+                    profileForm.reset();
+                    window.location.reload(); // Reload to show updated profile image
+                } else {
+                    alert('Failed to update profile.');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Error updating profile.');
+            }
+        });
 
         document.getElementById('completionTrendSelector').addEventListener('click', e => {
             if (e.target.classList.contains('time-btn')) {

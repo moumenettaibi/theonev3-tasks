@@ -19,6 +19,7 @@ from flask import Flask, render_template, request, jsonify, session # --- MODIFI
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 from dotenv import load_dotenv
 from google import genai
@@ -149,6 +150,18 @@ def run_migrations():
                 cur.execute("ALTER TABLE notes ADD COLUMN tldr TEXT;")
                 print(" -> Added 'tldr' column to 'notes' table.")
 
+            # Add email column to users if it doesn't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE users ADD COLUMN email TEXT;")
+                print(" -> Added 'email' column to 'users' table.")
+
+            # Add profile_image column to users if it doesn't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='profile_image';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT;")
+                print(" -> Added 'profile_image' column to 'users' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -161,10 +174,12 @@ login_manager.init_app(app)
 login_manager.login_view = 'login_page'
 
 class User(UserMixin):
-    def __init__(self, id, username, password_hash):
+    def __init__(self, id, username, password_hash, email=None, profile_image=None):
         self.id = id
         self.username = username
         self.password_hash = password_hash
+        self.email = email
+        self.profile_image = profile_image
 
 def get_user_by_username(username):
     with get_db_connection() as conn:
@@ -172,7 +187,7 @@ def get_user_by_username(username):
             cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'])
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'))
     return None
 
 def get_user_by_id(user_id):
@@ -181,7 +196,7 @@ def get_user_by_id(user_id):
             cur.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'])
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'))
     return None
 
 @login_manager.user_loader
@@ -336,7 +351,7 @@ def logout():
 def home():
     if current_user.is_authenticated:
         tasks_data = read_user_tasks()
-        return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+        return render_template('index.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, initial_tasks=tasks_data)
     else:
         return render_template('landing.html')
 
@@ -346,12 +361,12 @@ def home():
 @login_required
 def app_dashboard():
     tasks_data = read_user_tasks()
-    return render_template('index.html', username=current_user.username, initial_tasks=tasks_data)
+    return render_template('index.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, initial_tasks=tasks_data)
 
 @app.route('/notes')
 @login_required
 def notes_page():
-    return render_template('notes.html', username=current_user.username)
+    return render_template('notes.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image)
 
 # --- Helper Functions for Smart Notes ---
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
@@ -937,15 +952,61 @@ def handle_tasks():
     if request.method == 'GET':
         tasks = read_user_tasks()
         return jsonify(tasks)
-    
+
     if request.method == 'POST':
         new_tasks = request.get_json()
         if not isinstance(new_tasks, list):
             return jsonify({'error': 'Invalid data format'}), 400
-        
+
         write_user_tasks(new_tasks)
         socketio.emit('tasks_updated', new_tasks, to=current_user.id)
         return jsonify({'success': True, 'message': 'Tasks saved and synced.'})
+
+@app.route('/api/profile', methods=['POST'])
+@login_required
+def update_profile():
+    profile_image = request.files.get('profile_image')
+    username = request.form.get('username')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    updates = []
+    params = []
+
+    if profile_image:
+        filename = secure_filename(profile_image.filename)
+        if filename:
+            filepath = os.path.join(app.static_folder, 'uploads', filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            profile_image.save(filepath)
+            updates.append("profile_image = %s")
+            params.append(f'/static/uploads/{filename}')
+
+    if username:
+        updates.append("username = %s")
+        params.append(username)
+
+    if email:
+        updates.append("email = %s")
+        params.append(email)
+
+    if password:
+        hashed = generate_password_hash(password)
+        updates.append("password_hash = %s")
+        params.append(hashed)
+
+    if not updates:
+        return jsonify({'success': False, 'message': 'No changes provided.'}), 400
+
+    query = f"UPDATE users SET {', '.join(updates)} WHERE id = %s"
+    params.append(current_user.id)
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, tuple(params))
+            conn.commit()
+
+    return jsonify({'success': True, 'message': 'Profile updated successfully.'})
 
 # --- WebSocket Event Handlers ---
 @socketio.on('connect')
