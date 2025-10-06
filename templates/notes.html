@@ -1141,23 +1141,36 @@
             });
 
             // --- Initialization ---
-            async function init() {
-                try {
-                    // Load cached notes first for instant display
-                    const cachedNotes = loadNotesFromCache();
-                    if (cachedNotes) {
-                        notes = cachedNotes;
-                        renderNotes();
-                    }
+            function renderSkeletonLoader() {
+                notesContainer.innerHTML = ''; // Clear any previous content
+                for (let i = 0; i < 12; i++) { // Render 12 skeleton cards
+                    const card = document.createElement('div');
+                    card.className = 'note-card skeleton-card';
+                    notesContainer.appendChild(card);
+                }
+            }
 
+            async function init() {
+                // Load cached notes first for instant display
+                const cachedNotes = loadNotesFromCache();
+                if (cachedNotes && cachedNotes.length > 0) {
+                    notes = cachedNotes;
+                    renderNotes();
+                } else {
+                    // If no cache, show skeleton loader immediately
+                    renderSkeletonLoader();
+                }
+
+                try {
                     // Then fetch fresh data from API
                     const freshNotes = await api.getNotes();
                     notes = freshNotes;
                     saveNotesToCache(notes);
-                    renderNotes();
+                    renderNotes(); // This will replace the skeleton loader or the cached notes
                 } catch (error) {
                     console.error('Initialization failed:', error);
-                    // If API fails but we have cache, keep showing cached notes
+                    // If API fails and we have no notes, show an error.
+                    // The skeleton loader might still be visible, so we should replace it.
                     if (notes.length === 0) {
                         notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
                     }
