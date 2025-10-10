@@ -169,6 +169,15 @@
         </div>
     </div>
 
+    <div id="player-modal" class="player-modal">
+        <button id="close-player-btn" class="close-player-btn" title="Back to Browse">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path>
+            </svg>
+        </button>
+        <div id="player-container"></div>
+    </div>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -190,6 +199,12 @@
             let searchTerms = []; // Changed from searchTerm to searchTerms array
             let currentInputValue = ''; // Current value being typed in input field
             let currentEditor = null;
+
+            // Player constants
+            const apiKey = 'f2d7ae9dee829174c475e32fe8f993dc';
+            const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
+            const backdropBaseUrl = 'https://image.tmdb.org/t/p/original';
+            const playerBaseUrl = 'https://player.videasy.net';
 
             // Notification functions
             function showNotification(message, duration = 2000) {
@@ -231,6 +246,60 @@
                     console.log('Failed to load notes from cache:', e);
                 }
                 return null;
+            }
+
+            // Player functions
+            async function fetchData(url) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) { console.error('Error fetching data:', error); return null; }
+            }
+
+            function openPlayerModal(url, mediaType, itemId) {
+                const playerModal = document.getElementById('player-modal');
+                const playerContainer = document.getElementById('player-container');
+                if (playerContainer && playerModal) {
+                    playerContainer.innerHTML = `<iframe src="${url}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                    playerModal.classList.add('active');
+                    document.body.classList.add('modal-open');
+
+                    window.addEventListener('message', async (event) => {
+                        if (event.source !== playerContainer.querySelector('iframe').contentWindow) return;
+
+                        if (event.data.type === 'episodeEnded') {
+                            const nextEpisodeButton = document.createElement('button');
+                            nextEpisodeButton.id = 'next-episode-btn';
+                            nextEpisodeButton.textContent = 'Next Episode';
+                            nextEpisodeButton.onclick = async () => {
+                                const [_, __, currentSeason, currentEpisode] = url.split('/');
+                                const nextEpisodeNumber = parseInt(currentEpisode) + 1;
+                                const seasonsUrl = `https://api.themoviedb.org/3/tv/${itemId}?api_key=${apiKey}`;
+                                const seasonsData = await fetchData(seasonsUrl);
+                                const currentSeasonData = seasonsData.seasons.find(s => s.season_number == currentSeason);
+                                if (currentSeasonData && nextEpisodeNumber <= currentSeasonData.episode_count) {
+                                    const nextEpisodeUrl = `${playerBaseUrl}/tv/${itemId}/${currentSeason}/${nextEpisodeNumber}`;
+                                    openPlayerModal(nextEpisodeUrl, mediaType, itemId);
+                                } else {
+                                    // Handle end of season or series
+                                    closePlayerModal();
+                                }
+                            };
+                            playerContainer.appendChild(nextEpisodeButton);
+                        }
+                    });
+                }
+            }
+
+            function closePlayerModal() {
+                const playerModal = document.getElementById('player-modal');
+                const playerContainer = document.getElementById('player-container');
+                if (playerContainer && playerModal) {
+                    playerModal.classList.remove('active');
+                    playerContainer.innerHTML = '';
+                    document.body.classList.remove('modal-open');
+                }
             }
 
             // Socket.IO setup
@@ -507,6 +576,9 @@
                                 <div class="note-card-overlay">
                                     <h3 class="note-card-title">${highlightSearchTerm(title)}</h3>
                                     <p class="note-card-meta">${year}</p>
+                                    <div class="play-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    </div>
                                 </div>`;
                             break;
                         case 'Wikipedia':
@@ -1027,6 +1099,41 @@
             }, true);
 
             notesContainer.addEventListener('click', (e) => {
+                if (e.target.closest('.play-icon')) {
+                    const card = e.target.closest('.note-card');
+                    const noteId = card.dataset.noteId;
+                    const note = notes.find(n => n.id === noteId);
+                    if (note && (note.note_type === 'Movie' || note.note_type === 'TV Show')) {
+                        const mediaType = note.note_type === 'Movie' ? 'movie' : 'tv';
+                        const itemId = note.metadata.details.id;
+                        const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+                        // Create full-screen player overlay
+                        const playerOverlay = document.createElement('div');
+                        playerOverlay.id = 'full-player-overlay';
+                        playerOverlay.innerHTML = `
+                            <button id="close-full-player" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); border: none; color: white; padding: 10px; cursor: pointer; z-index: 10001;">
+                                <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+                            </button>
+                            <iframe src="${playerUrl}" allow="autoplay; fullscreen" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
+                        `;
+                        playerOverlay.style.position = 'fixed';
+                        playerOverlay.style.top = '0';
+                        playerOverlay.style.left = '0';
+                        playerOverlay.style.width = '100%';
+                        playerOverlay.style.height = '100%';
+                        playerOverlay.style.background = '#000';
+                        playerOverlay.style.zIndex = '10000';
+                        document.body.appendChild(playerOverlay);
+                        document.body.classList.add('modal-open');
+
+                        // Close button event
+                        playerOverlay.querySelector('#close-full-player').addEventListener('click', () => {
+                            playerOverlay.remove();
+                            document.body.classList.remove('modal-open');
+                        });
+                    }
+                    return; // Prevent opening the note modal
+                }
                 const card = e.target.closest('.note-card');
                 if (card) {
                     const noteId = card.dataset.noteId;
@@ -1278,6 +1385,13 @@
                 } catch (error) {
                     console.error('Error updating profile:', error);
                     showNotification('Error updating profile.');
+                }
+            });
+
+            // Close player modal on button click
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('#close-player-btn')) {
+                    closePlayerModal();
                 }
             });
         });
