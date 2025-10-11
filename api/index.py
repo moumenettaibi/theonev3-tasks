@@ -162,6 +162,12 @@ def run_migrations():
                 cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT;")
                 print(" -> Added 'profile_image' column to 'users' table.")
 
+            # Add archived column to notes if it doesn't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='notes' AND column_name='archived';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE notes ADD COLUMN archived BOOLEAN NOT NULL DEFAULT false;")
+                print(" -> Added 'archived' column to 'notes' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -366,7 +372,12 @@ def app_dashboard():
 @app.route('/notes')
 @login_required
 def notes_page():
-    return render_template('notes.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image)
+    return render_template('notes_view.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, is_archive=False)
+
+@app.route('/archive')
+@login_required
+def archive_page():
+    return render_template('notes_view.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, is_archive=True)
 
 # --- Helper Functions for Smart Notes ---
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
@@ -772,11 +783,12 @@ def background_generate_title(note_id, content, user_id):
 @app.route('/api/notes', methods=['GET'])
 @login_required
 def get_notes():
+    archived_filter = request.args.get('archived', 'false').lower() == 'true'
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, title, content, created_at, updated_at, note_type, metadata, tags, tldr FROM notes WHERE user_id = %s ORDER BY updated_at DESC;",
-                (current_user.id,)
+                "SELECT id, title, content, created_at, updated_at, note_type, metadata, tags, tldr, archived FROM notes WHERE user_id = %s AND archived = %s ORDER BY updated_at DESC;",
+                (current_user.id, archived_filter)
             )
             notes = cur.fetchall()
     for note in notes:
@@ -907,6 +919,22 @@ def delete_note(note_id):
             conn.commit()
     return jsonify({'success': True, 'message': 'Note deleted successfully.'})
 
+@app.route('/api/notes/<uuid:note_id>/archive', methods=['PUT'])
+@login_required
+def archive_note(note_id):
+    data = request.get_json()
+    archived = data.get('archived', True)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE notes SET archived = %s WHERE id = %s AND user_id = %s;",
+                (archived, str(note_id), current_user.id)
+            )
+            if cur.rowcount == 0:
+                return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
+            conn.commit()
+    return jsonify({'success': True, 'message': f'Note {"archived" if archived else "unarchived"} successfully.'})
+
 @app.route('/api/notes/<uuid:note_id>/generate-tldr', methods=['POST'])
 @login_required
 def generate_note_tldr(note_id):
@@ -1023,4 +1051,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5004, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=5004, allow_unsafe_werkzeug=True, use_reloader=False)

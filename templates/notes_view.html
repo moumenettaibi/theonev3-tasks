@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YAJORA - Notes</title>
+    <title>YAJORA - {% if is_archive %}Archive{% else %}Notes{% endif %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -20,9 +20,10 @@
                     <div id="appDropdown" class="dropdown-content">
                         <a href="/~">Yajora Tasks</a>
                         <a href="/notes">Yajora Notes</a>
+                        <a href="/archive">Archived Notes</a>
                     </div>
                 </div>
-                <h1 id="headerTitle">Notes</h1>
+                <h1 id="headerTitle"><a href="{% if is_archive %}/notes{% else %}/archive{% endif %}">{% if is_archive %}Archived Notes{% else %}Notes{% endif %}</a></h1>
                 <div class="profile-container">
                     <button id="profileBtn" class="profile-btn">
                         {% if profile_image %}
@@ -61,6 +62,7 @@
         <span id="notificationText"></span>
     </div>
 
+    {% if not is_archive %}
     <!-- Floating Action Button -->
     <div class="add-task-btn" id="addNoteBtn">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -68,6 +70,7 @@
         <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
     </div>
+    {% endif %}
 
     <!-- Note Inspector Modal -->
     <div class="modal" id="noteModal">
@@ -180,6 +183,7 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
+        const isArchivePage = {{ is_archive | tojson }};
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
             const notesContainer = document.getElementById('notesContainer');
@@ -400,10 +404,11 @@
 
             // --- API Communication ---
             const api = {
-                getNotes: async () => (await fetch('/api/notes')).json(),
+                getNotes: async (archived = false) => (await fetch(`/api/notes?archived=${archived}`)).json(),
                 createNote: async (title, content) => (await fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content }) })).json(),
                 updateNote: async (id, title, content, tags) => (await fetch(`/api/notes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, tags }) })).json(),
                 deleteNote: async (id) => (await fetch(`/api/notes/${id}`, { method: 'DELETE' })).json(),
+                archiveNote: async (id, archived) => (await fetch(`/api/notes/${id}/archive`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived }) })).json(),
                 generateTldr: async (id) => (await fetch(`/api/notes/${id}/generate-tldr`, { method: 'POST' })).json(),
             };
 
@@ -650,6 +655,29 @@
                             break;
                     }
                     card.innerHTML = cardContent;
+
+                    if (!isArchivePage) {
+                        // Add archive icon on hover
+                        const archiveIcon = document.createElement('div');
+                        archiveIcon.className = 'archive-icon';
+                        archiveIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
+                        archiveIcon.title = 'Archive Note';
+                        archiveIcon.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const noteId = card.dataset.noteId;
+                            try {
+                                await api.archiveNote(noteId, true);
+                                notes = notes.filter(n => n.id !== noteId);
+                                renderNotes();
+                                showNotification('Note archived.');
+                            } catch (error) {
+                                console.error('Archive failed:', error);
+                                showNotification('Failed to archive note.');
+                            }
+                        });
+                        card.appendChild(archiveIcon);
+                    }
+
                     notesContainer.appendChild(card);
                 });
             }
@@ -844,6 +872,9 @@
                         `}
 
                         <div class="sidebar-footer">
+                            <button class="action-btn" id="${isArchivePage ? 'unarchiveNoteBtn' : 'archiveNoteBtn'}" title="${isArchivePage ? 'Unarchive Note' : 'Archive Note'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                            </button>
                             <button class="action-btn" id="deleteNoteBtn" title="Delete Note">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             </button>
@@ -1068,6 +1099,20 @@
                 }
             }
 
+            async function handleArchiveNote(archive) {
+                if (!editingNoteId) return;
+                try {
+                    await api.archiveNote(editingNoteId, archive);
+                    notes = notes.filter(n => n.id !== editingNoteId);
+                    renderNotes();
+                    closeNoteModal();
+                    showNotification(archive ? 'Note archived.' : 'Note unarchived.');
+                } catch (error) {
+                    console.error('Archive/unarchive failed:', error);
+                    showNotification('Failed to update note.');
+                }
+            }
+
             async function handleDeleteNote() {
                 if (!editingNoteId) return;
                 try {
@@ -1082,12 +1127,16 @@
             }
 
             // --- Event Listeners ---
-            addNoteBtn.addEventListener('click', openCreateModal);
+            if (addNoteBtn) {
+                addNoteBtn.addEventListener('click', openCreateModal);
+            }
 
             // Event delegation for modal actions
             noteModal.addEventListener('click', (e) => {
                 if (e.target.closest('#cancelNoteBtn')) closeNoteModal();
                 if (e.target.closest('#deleteNoteBtn')) handleDeleteNote();
+                if (e.target.closest('#archiveNoteBtn')) handleArchiveNote(true);
+                if (e.target.closest('#unarchiveNoteBtn')) handleArchiveNote(false);
                 if (e.target === noteModal) closeNoteModal();
             });
 
@@ -1250,24 +1299,13 @@
             // --- Initialization ---
             async function init() {
                 try {
-                    // Load cached notes first for instant display
-                    const cachedNotes = loadNotesFromCache();
-                    if (cachedNotes) {
-                        notes = cachedNotes;
-                        renderNotes();
-                    }
-
                     // Then fetch fresh data from API
-                    const freshNotes = await api.getNotes();
+                    const freshNotes = await api.getNotes(isArchivePage);
                     notes = freshNotes;
-                    saveNotesToCache(notes);
                     renderNotes();
                 } catch (error) {
                     console.error('Initialization failed:', error);
-                    // If API fails but we have cache, keep showing cached notes
-                    if (notes.length === 0) {
-                        notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
-                    }
+                    notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
                 }
             }
 
@@ -1289,7 +1327,7 @@
                     e.preventDefault();
                     searchInput.focus();
                 }
-                if (e.altKey && e.code === 'KeyN') {
+                if (!isArchivePage && e.altKey && e.code === 'KeyN') {
                     e.preventDefault();
                     // Close any open modals first
                     if (noteModal.style.display === 'flex') {
@@ -1299,7 +1337,7 @@
                     }
                     openCreateModal();
                 }
-                if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
+                if (!isArchivePage && (e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
                     // Check if we're not in an editable element (input, textarea, or contenteditable)
                     const activeElement = document.activeElement;
                     const isEditable = activeElement.tagName === 'INPUT' ||
