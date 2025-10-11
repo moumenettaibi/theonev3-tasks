@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAJORA - Calendar</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <!-- FullCalendar CSS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <!-- Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
+</head>
+
+<body class="calendar-view">
+    <!-- Data div for initial tasks -->
+    <div id="initial-data" data-tasks='{{ initial_tasks | tojson }}' style="display: none;"></div>
+
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='favicon.png') }}" alt="Yajora Logo" class="logo">
+                    <div id="appDropdown" class="dropdown-content">
+                        <a href="/~">Yajora Tasks</a>
+                        <a href="/notes">Yajora Notes</a>
+                        <a href="/calendar">Yajora Calendar</a>
+                    </div>
+                </div>
+                <h1 id="headerTitle">Yajora Calendar</h1>
+                <div class="profile-container">
+                    <button id="profileBtn" class="profile-btn">
+                        {% if profile_image %}
+                            <img src="{{ profile_image }}" alt="Profile" class="profile-img">
+                        {% else %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6 20c0-3.5 3-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div id="calendar"></div>
+
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="add-task-btn" id="addTaskBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <!-- Modals and Inputs will go here -->
+    <script src="{{ url_for('static', filename='calendar.js') }}"></script>
+</body>
+
+</html>

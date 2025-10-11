@@ -368,6 +368,12 @@ def app_dashboard():
 def notes_page():
     return render_template('notes.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image)
 
+@app.route('/calendar')
+@login_required
+def calendar_page():
+    tasks_data = read_user_tasks()
+    return render_template('calendar.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, initial_tasks=tasks_data)
+
 # --- Helper Functions for Smart Notes ---
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
 TMDB_API_BASE_URL = 'https://api.themoviedb.org/3'
@@ -1023,4 +1029,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5004, allow_unsafe_werkzeug=True)
+    socketio.run(app, port=5004, allow_unsafe_werkzeug=True, use_reloader=False)

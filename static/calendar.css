@@ -1,0 +1,7 @@
+/* Styles for Yajora Calendar */
+
+#calendar {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 10px;
+}
