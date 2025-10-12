@@ -755,7 +755,7 @@
                 return diffYears === 1 ? '1 year ago' : `${diffYears} years ago`;
             }
 
-            // --- NEW: Inspector Modal Builder ---
+            // --- Inspector Modal Builder ---
             let saveTimeout;
             function debouncedSave() {
                 clearTimeout(saveTimeout);
@@ -765,6 +765,7 @@
             }
 
             function openNoteModal(note) {
+                const isMobile = window.innerWidth <= 992;
                 editingNoteId = note ? note.id : null;
                 currentTags = note ? (note.tags || []) : [];
                 let isStandard = false;
@@ -772,17 +773,19 @@
                 const modalContent = document.getElementById('noteModalContent');
                 modalContent.innerHTML = ''; // Clear previous content
 
-                // Create main layout
+                // Create main layout elements
                 const mainContent = document.createElement('div');
                 mainContent.className = 'modal-main-content';
 
                 const sidebar = document.createElement('div');
                 sidebar.className = 'modal-sidebar';
 
-                // --- Populate Main Content (Left Panel) ---
+                // --- Populate Main Content (for both mobile and desktop) ---
                 let mainContentHTML = '';
                 let url = note.metadata?.url || (note.metadata?.details?.id ? `https://www.themoviedb.org/${note.note_type === 'Movie' ? 'movie' : 'tv'}/${note.metadata.details.id}` : null);
-                let useDefaultSidebar = true; // Flag to control sidebar generation
+                
+                // Add relevant classes to the mainContent element for styling
+                mainContent.classList.add(`${note.note_type.toLowerCase().replace(' ', '-')}-content`);
 
                 switch (note.note_type) {
                     case 'Movie':
@@ -793,20 +796,15 @@
                             <div class="media-preview-container">
                                 <img src="${posterUrl}" loading="lazy" class="media-poster-preview" alt="Poster">
                                 ${url ? `<a href="${url}" target="_blank" class="view-details-btn">View Details</a>` : ''}
-                            </div>
-                        `;
+                            </div>`;
                         break;
                     case 'Wikipedia':
                         url = note.metadata?.url;
                         if (url) {
                             mainContent.classList.add('wikipedia-embed-content');
-                            mainContentHTML = `
-                                <div class="media-preview-container">
-                                    <iframe src="${url}" frameborder="0"></iframe>
-                                </div>
-                            `;
+                            mainContentHTML = `<div class="media-preview-container"><iframe src="${url}" frameborder="0"></iframe></div>`;
                         } else {
-                            mainContentHTML = `<div class="content-preview">No Wikipedia URL found for this note.</div>`;
+                            mainContentHTML = `<div class="content-preview">No Wikipedia URL found.</div>`;
                         }
                         break;
                     case 'YouTube':
@@ -814,13 +812,9 @@
                         url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
                         if (videoId) {
                             mainContent.classList.add('youtube-video-content');
-                            mainContentHTML = `
-                                <div class="media-preview-container">
-                                    <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                                </div>
-                            `;
+                            mainContentHTML = `<div class="media-preview-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                         } else {
-                            mainContentHTML = `<div class="content-preview">No video ID found for this note.</div>`;
+                            mainContentHTML = `<div class="content-preview">No video ID found.</div>`;
                         }
                         break;
                     case 'Reddit':
@@ -828,20 +822,7 @@
                         url = redditDetails?.url;
                         if (redditDetails) {
                             mainContent.classList.add('reddit-card-content');
-                            const subreddit = note.metadata?.subreddit;
-                            mainContentHTML = `
-                                <div class="reddit-card-custom">
-                                    <div class="reddit-card-top">
-                                        <img src="/static/Reddit_Logo.webp" alt="Reddit Snoo" class="snoo-logo">
-                                    </div>
-                                    <div class="reddit-card-bottom">
-                                        <div class="reddit-logo-text">reddit</div>
-                                        <h3 class="reddit-post-title">${redditDetails.title}</h3>
-                                        <p class="reddit-subreddit">r/${subreddit}</p>
-                                        <a href="${url}" target="_blank" class="reddit-view-btn">VIEW ON REDDIT</a>
-                                    </div>
-                                </div>
-                            `;
+                            mainContentHTML = `<div class="reddit-card-custom"><div class="reddit-card-top"><img src="/static/Reddit_Logo.webp" alt="Reddit Snoo" class="snoo-logo"></div><div class="reddit-card-bottom"><div class="reddit-logo-text">reddit</div><h3 class="reddit-post-title">${redditDetails.title}</h3><p class="reddit-subreddit">r/${note.metadata?.subreddit}</p><a href="${url}" target="_blank" class="reddit-view-btn">VIEW ON REDDIT</a></div></div>`;
                         } else {
                             mainContentHTML = `<div class="content-preview">Could not load Reddit post.</div>`;
                         }
@@ -851,20 +832,7 @@
                         url = xDetails?.url;
                         if (xDetails) {
                             mainContent.classList.add('x-card-content');
-                            mainContentHTML = `
-                                <div class="x-card-custom">
-                                    <div class="x-card-top">
-                                        <img src="/static/x-logo.png" alt="X Logo" class="x-logo">
-                                    </div>
-                                    <div class="x-card-middle">
-                                        <div class="x-logo-text">x</div>
-                                        <h3 class="x-post-title">Tweet by @${xDetails.author_name}</h3>
-                                    </div>
-                                    <div class="x-card-bottom">
-                                        <a href="${url}" target="_blank" class="x-view-btn">VIEW ON X</a>
-                                    </div>
-                                </div>
-                            `;
+                            mainContentHTML = `<div class="x-card-custom"><div class="x-card-top"><img src="/static/x-logo.png" alt="X Logo" class="x-logo"></div><div class="x-card-middle"><div class="x-logo-text">x</div><h3 class="x-post-title">Tweet by @${xDetails.author_name}</h3></div><div class="x-card-bottom"><a href="${url}" target="_blank" class="x-view-btn">VIEW ON X</a></div></div>`;
                         } else {
                             mainContentHTML = `<div class="content-preview">Could not load X post.</div>`;
                         }
@@ -874,94 +842,75 @@
                         mainContentHTML = `<div id="wysiwyg-editor"></div>`;
                         break;
                 }
-                mainContent.innerHTML = mainContentHTML;
 
                 // --- Populate Sidebar (Right Panel) ---
-                if (useDefaultSidebar) {
-                    const title = note.metadata?.details?.title || note.metadata?.details?.name || note.title;
-                    const tldr = note.tldr || note.metadata?.details?.overview || note.metadata?.details?.summary || 'No summary available.';
-                    const isGenerating = note.tldr === 'Generating summary...';
+                const title = note.metadata?.details?.title || note.metadata?.details?.name || note.title;
+                const tldr = note.tldr || note.metadata?.details?.overview || note.metadata?.details?.summary || 'No summary available.';
+                const isGenerating = note.tldr === 'Generating summary...';
 
-                    // Determine source text based on URL
-                    let sourceText = note.note_type;
-                    if (url) {
-                        if (url.includes('letterboxd.com')) sourceText = 'Letterboxd';
-                        else if (url.includes('serializd.com')) sourceText = 'Serializd';
-                        else if (url.includes('themoviedb.org')) sourceText = 'TMDB';
-                    }
-
-                    sidebar.innerHTML = `
-                        <div class="sidebar-header">
-                            <h2 class="title">${title}</h2>
-                            <p class="meta">
-                                <span class="date">${timeAgo(note.created_at)}</span>
-                                ${url ? `<a href="${url}" target="_blank" class="source-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${sourceText}</a>` : `<span class="source">${sourceText}</span>`}
-                            </p>
-                        </div>
-
-                        <div class="sidebar-section">
-                            <h3 class="section-title">TLDR</h3>
-                            <p class="tldr-content ${isGenerating ? 'generating' : ''}">${isGenerating ? '' : tldr}</p>
-                            ${isGenerating ? '<div class="tldr-loading"><div class="loading-spinner"></div> Generating AI summary...</div>' : ''}
-                            ${!isGenerating && (tldr === 'No summary available.' || !tldr) ? `<button class="generate-tldr-btn" data-note-id="${note.id}">Generate AI Summary</button>` : ''}
-                        </div>
-
-                        <div class="sidebar-section">
-                            <h3 class="section-title">TAGS</h3>
-                            <div class="tags-container">
-                                <!-- Tags will be rendered here -->
-                            </div>
-                        </div>
-
-                        ${isStandard ? '' : `
-                        <div class="sidebar-section">
-                            <h3 class="section-title">
-                                MIND NOTES <span class="question-mark" title="Your personal notes. Saved automatically.">?</span>
-                            </h3>
-                            <textarea id="mindNotesInput" placeholder="Type here to add a note...">${note.content || ''}</textarea>
-                        </div>
-                        `}
-
-                        <div class="sidebar-footer">
-                            <button class="action-btn" id="${showArchived ? 'unarchiveNoteBtn' : 'archiveNoteBtn'}" title="${showArchived ? 'Unarchive Note' : 'Archive Note'}">
-                                ${showArchived ?
-                                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/><line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="2"/></svg>` :
-                                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`
-                                }
-                            </button>
-                            <button class="action-btn" id="deleteNoteBtn" title="Delete Note">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
-                    `;
+                let sourceText = note.note_type;
+                if (url) {
+                    if (url.includes('letterboxd.com')) sourceText = 'Letterboxd';
+                    else if (url.includes('serializd.com')) sourceText = 'Serializd';
+                    else if (url.includes('themoviedb.org')) sourceText = 'TMDB';
                 }
+                
+                // If mobile, create a container for the media to be injected
+                const injectedMediaHTML = isMobile && !isStandard ? `<div class="sidebar-injected-media">${mainContentHTML}</div>` : '';
 
-                modalContent.appendChild(mainContent);
+                sidebar.innerHTML = `
+                    <div class="sidebar-header">
+                        <h2 class="title">${title}</h2>
+                        <p class="meta">
+                            <span class="date">${timeAgo(note.created_at)}</span>
+                            ${url ? `<a href="${url}" target="_blank" class="source-link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${sourceText}</a>` : `<span class="source">${sourceText}</span>`}
+                        </p>
+                    </div>
+
+                    ${injectedMediaHTML}
+
+                    <div class="sidebar-section">
+                        <h3 class="section-title">TLDR</h3>
+                        <p class="tldr-content ${isGenerating ? 'generating' : ''}">${isGenerating ? '' : tldr}</p>
+                        ${isGenerating ? '<div class="tldr-loading"><div class="loading-spinner"></div> Generating AI summary...</div>' : ''}
+                        ${!isGenerating && (tldr === 'No summary available.' || !tldr) ? `<button class="generate-tldr-btn" data-note-id="${note.id}">Generate AI Summary</button>` : ''}
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3 class="section-title">TAGS</h3>
+                        <div class="tags-container"><!-- Tags will be rendered here --></div>
+                    </div>
+
+                    ${isStandard ? '' : `<div class="sidebar-section"><h3 class="section-title">MIND NOTES <span class="question-mark" title="Your personal notes. Saved automatically.">?</span></h3><textarea id="mindNotesInput" placeholder="Type here to add a note...">${note.content || ''}</textarea></div>`}
+
+                    <div class="sidebar-footer">
+                        <button class="action-btn" id="${showArchived ? 'unarchiveNoteBtn' : 'archiveNoteBtn'}" title="${showArchived ? 'Unarchive Note' : 'Archive Note'}">
+                            ${showArchived ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/><line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="2"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`}
+                        </button>
+                        <button class="action-btn" id="deleteNoteBtn" title="Delete Note"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
+                    </div>`;
+
+                // --- Assemble the Modal ---
+                // If NOT mobile, add the main content column. Otherwise, it's already injected in the sidebar.
+                if (!isMobile) {
+                    mainContent.innerHTML = mainContentHTML;
+                    modalContent.appendChild(mainContent);
+                }
                 modalContent.appendChild(sidebar);
                 renderTags();
 
                 if (isStandard) {
-                    const editorElement = document.getElementById('wysiwyg-editor');
-                    currentEditor = new Quill(editorElement, {
+                    // Quill editor should be set up whether on mobile or desktop
+                    const editorContainer = isMobile ? sidebar : mainContent;
+                    editorContainer.innerHTML = mainContentHTML;
+                    currentEditor = new Quill('#wysiwyg-editor', {
                         theme: 'snow',
                         placeholder: 'Start writing your note...',
-                        modules: {
-                            toolbar: [
-                                [{ 'header': [1, 2, 3, false] }],
-                                ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                ['blockquote', 'code-block'],
-                                ['link'],
-                                ['clean']
-                            ]
-                        }
+                        modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['blockquote', 'code-block'], ['link'], ['clean']] }
                     });
-                    // Set initial content by converting markdown to HTML
                     const initialHtml = marked.parse(note.content || '');
                     currentEditor.root.innerHTML = initialHtml;
-                    currentEditor.on('text-change', () => {
-                        debouncedSave();
-                    });
+                    currentEditor.on('text-change', debouncedSave);
                 }
 
                 // Add auto-save for mind notes
@@ -969,93 +918,68 @@
                     const mindNotesInput = document.getElementById('mindNotesInput');
                     if (mindNotesInput) {
                         mindNotesInput.addEventListener('input', debouncedSave);
-                        mindNotesInput.addEventListener('blur', () => {
-                            clearTimeout(saveTimeout);
-                            handleSaveNote();
-                        });
+                        mindNotesInput.addEventListener('blur', () => { clearTimeout(saveTimeout); handleSaveNote(); });
                     }
                 }
 
-                // Event delegation for generate TLDR button (since it's dynamically created)
+                // Event delegation for generate TLDR button
                 modalContent.addEventListener('click', async (e) => {
                     if (e.target.classList.contains('generate-tldr-btn')) {
                         const button = e.target;
-                        const noteId = button.dataset.noteId;
-
-                        // Disable button immediately to prevent multiple clicks
                         button.disabled = true;
                         button.textContent = 'Generating...';
-                        button.style.opacity = '0.6';
-
                         try {
-                            // Call API to generate TLDR
-                            await api.generateTldr(noteId);
-
-                            // Update UI to show loading state
+                            await api.generateTldr(button.dataset.noteId);
                             const tldrContent = modalContent.querySelector('.tldr-content');
                             const loadingDiv = document.createElement('div');
                             loadingDiv.className = 'tldr-loading';
                             loadingDiv.innerHTML = '<div class="loading-spinner"></div> Generating AI summary...';
-
                             tldrContent.classList.add('generating');
                             tldrContent.textContent = '';
                             button.replaceWith(loadingDiv);
-
                         } catch (error) {
                             console.error('Generate TLDR failed:', error);
-                            // Re-enable button on error
                             button.disabled = false;
                             button.textContent = 'Generate AI Summary';
-                            button.style.opacity = '1';
                         }
                     }
                 });
 
-                // Add event listener for adding tags
+                // Add event listener for tags
                 const tagsContainer = document.querySelector('.tags-container');
                 tagsContainer.addEventListener('click', (e) => {
                     if (e.target.closest('.add-tag-btn')) {
-                        // Toggle the visibility of the input controls
                         const controls = document.querySelector('.add-tag-controls');
-                        if (controls) {
-                            controls.remove();
-                        } else {
+                        if (controls) { controls.remove(); } 
+                        else {
                             const tagsRow = document.querySelector('.tags-row');
                             if (tagsRow) {
                                 const newControls = document.createElement('div');
                                 newControls.className = 'add-tag-controls';
-                                newControls.innerHTML = `
-                                    <input type="text" class="add-tag-input" placeholder="Add a tag...">
-                                    <button class="add-tag-plus-btn"><svg viewBox="0 0 24 24" fill="currentColor"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/></svg></button>
-                                `;
+                                newControls.innerHTML = `<input type="text" class="add-tag-input" placeholder="Add a tag..."><button class="add-tag-plus-btn"><svg viewBox="0 0 24 24" fill="currentColor"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/></svg></button>`;
                                 tagsRow.parentElement.insertBefore(newControls, tagsRow);
-                                const input = newControls.querySelector('.add-tag-input');
-                                input.focus();
+                                newControls.querySelector('.add-tag-input').focus();
                             }
                         }
                     } else if (e.target.closest('.add-tag-plus-btn')) {
-                        // Add the tag
                         const input = document.querySelector('.add-tag-input');
                         const tag = input.value.trim();
                         if (tag && !currentTags.includes(tag)) {
                             currentTags.push(tag);
                             renderTags();
-                            handleSaveNote(); // Auto-save after adding tag
+                            handleSaveNote();
                         }
                     } else if (e.target.classList.contains('delete-tag')) {
-                        // Delete the tag
                         const tagSpan = e.target.parentElement;
-                        const tagText = tagSpan.textContent.slice(0, -1); // remove ×
+                        const tagText = tagSpan.textContent.slice(0, -1);
                         const index = currentTags.indexOf(tagText);
                         if (index > -1) {
                             currentTags.splice(index, 1);
                             renderTags();
-                            handleSaveNote(); // Auto-save after deleting tag
+                            handleSaveNote();
                         }
                     }
                 });
-
-                // Handle Enter key in input
                 tagsContainer.addEventListener('keypress', (e) => {
                     if (e.target.classList.contains('add-tag-input') && e.key === 'Enter') {
                         const input = e.target;
@@ -1063,11 +987,10 @@
                         if (tag && !currentTags.includes(tag)) {
                             currentTags.push(tag);
                             renderTags();
-                            handleSaveNote(); // Auto-save after adding tag
+                            handleSaveNote();
                         }
                     }
                 });
-
                 noteModal.style.display = 'flex';
             }
             
