@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YAJORA - {% if is_archive %}Archive{% else %}Notes{% endif %}</title>
+    <title>YAJORA - Notes</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -20,10 +20,9 @@
                     <div id="appDropdown" class="dropdown-content">
                         <a href="/~">Yajora Tasks</a>
                         <a href="/notes">Yajora Notes</a>
-                        <a href="/archive">Archived Notes</a>
                     </div>
                 </div>
-                <h1 id="headerTitle"><a href="{% if is_archive %}/notes{% else %}/archive{% endif %}">{% if is_archive %}Archived Notes{% else %}Notes{% endif %}</a></h1>
+                <h1 id="headerTitle">Notes</h1>
                 <div class="profile-container">
                     <button id="profileBtn" class="profile-btn">
                         {% if profile_image %}
@@ -62,7 +61,6 @@
         <span id="notificationText"></span>
     </div>
 
-    {% if not is_archive %}
     <!-- Floating Action Button -->
     <div class="add-task-btn" id="addNoteBtn">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,7 +68,6 @@
         <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
     </div>
-    {% endif %}
 
     <!-- Note Inspector Modal -->
     <div class="modal" id="noteModal">
@@ -183,7 +180,6 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const isArchivePage = {{ is_archive | tojson }};
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
             const notesContainer = document.getElementById('notesContainer');
@@ -195,14 +191,19 @@
             const appDropdown = document.getElementById('appDropdown');
             const logo = document.querySelector('.logo');
             const searchInput = document.getElementById('searchInput');
+            const headerTitle = document.getElementById('headerTitle');
 
             // State
             let notes = [];
+            let regularNotes = [];
+            let archivedNotes = [];
             let editingNoteId = null;
             let currentTags = [];
             let searchTerms = []; // Changed from searchTerm to searchTerms array
             let currentInputValue = ''; // Current value being typed in input field
             let currentEditor = null;
+            let showArchived = false;
+            let dataLoaded = false;
 
             // Player constants
             const apiKey = 'f2d7ae9dee829174c475e32fe8f993dc';
@@ -310,10 +311,14 @@
             const socket = io();
             socket.on('tldr_generated', (data) => {
                 // Update the note in our local state
-                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                let noteIndex = regularNotes.findIndex(n => n.id === data.note_id);
                 if (noteIndex !== -1) {
-                    notes[noteIndex].tldr = data.tldr;
-                    saveNotesToCache(notes); // Update cache
+                    regularNotes[noteIndex].tldr = data.tldr;
+                } else {
+                    noteIndex = archivedNotes.findIndex(n => n.id === data.note_id);
+                    if (noteIndex !== -1) {
+                        archivedNotes[noteIndex].tldr = data.tldr;
+                    }
                 }
 
                 // If we're currently viewing this note in the modal, update it
@@ -332,9 +337,14 @@
 
             socket.on('tldr_error', (data) => {
                 // Update the note in our local state
-                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                let noteIndex = regularNotes.findIndex(n => n.id === data.note_id);
                 if (noteIndex !== -1) {
-                    notes[noteIndex].tldr = data.error;
+                    regularNotes[noteIndex].tldr = data.error;
+                } else {
+                    noteIndex = archivedNotes.findIndex(n => n.id === data.note_id);
+                    if (noteIndex !== -1) {
+                        archivedNotes[noteIndex].tldr = data.error;
+                    }
                 }
 
                 // If we're currently viewing this note in the modal, update it
@@ -353,10 +363,14 @@
 
             socket.on('title_generated', (data) => {
                 // Update the note in our local state
-                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                let noteIndex = regularNotes.findIndex(n => n.id === data.note_id);
                 if (noteIndex !== -1) {
-                    notes[noteIndex].title = data.title;
-                    saveNotesToCache(notes); // Update cache
+                    regularNotes[noteIndex].title = data.title;
+                } else {
+                    noteIndex = archivedNotes.findIndex(n => n.id === data.note_id);
+                    if (noteIndex !== -1) {
+                        archivedNotes[noteIndex].title = data.title;
+                    }
                 }
 
                 // Update the card title if visible
@@ -379,9 +393,14 @@
 
             socket.on('title_error', (data) => {
                 // Update the note in our local state
-                const noteIndex = notes.findIndex(n => n.id === data.note_id);
+                let noteIndex = regularNotes.findIndex(n => n.id === data.note_id);
                 if (noteIndex !== -1) {
-                    notes[noteIndex].title = data.error;
+                    regularNotes[noteIndex].title = data.error;
+                } else {
+                    noteIndex = archivedNotes.findIndex(n => n.id === data.note_id);
+                    if (noteIndex !== -1) {
+                        archivedNotes[noteIndex].title = data.error;
+                    }
                 }
 
                 // Update the card title if visible
@@ -656,18 +675,50 @@
                     }
                     card.innerHTML = cardContent;
 
-                    if (!isArchivePage) {
-                        // Add archive icon on hover
-                        const archiveIcon = document.createElement('div');
-                        archiveIcon.className = 'archive-icon';
-                        archiveIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
-                        archiveIcon.title = 'Archive Note';
-                        archiveIcon.addEventListener('click', async (e) => {
+                    // Add archive/unarchive icon (visible on hover)
+                    const actionIcon = document.createElement('div');
+                    actionIcon.className = 'action-icon';
+                    if (showArchived) {
+                        // Unarchive icon for archived notes - archive icon with diagonal strikethrough
+                        actionIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/><line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="2"/></svg>`;
+                        actionIcon.title = 'Unarchive Note';
+                        actionIcon.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const noteId = card.dataset.noteId;
+                            try {
+                                await api.archiveNote(noteId, false);
+                                // Move note from archived to regular
+                                const noteToMove = archivedNotes.find(n => n.id === noteId);
+                                if (noteToMove) {
+                                    noteToMove.archived = false;
+                                    archivedNotes = archivedNotes.filter(n => n.id !== noteId);
+                                    regularNotes.unshift(noteToMove);
+                                    notes = archivedNotes;
+                                }
+                                renderNotes();
+                                showNotification('Note unarchived.');
+                            } catch (error) {
+                                console.error('Unarchive failed:', error);
+                                showNotification('Failed to unarchive note.');
+                            }
+                        });
+                    } else {
+                        // Archive icon for regular notes
+                        actionIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
+                        actionIcon.title = 'Archive Note';
+                        actionIcon.addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const noteId = card.dataset.noteId;
                             try {
                                 await api.archiveNote(noteId, true);
-                                notes = notes.filter(n => n.id !== noteId);
+                                // Move note from regular to archived
+                                const noteToMove = regularNotes.find(n => n.id === noteId);
+                                if (noteToMove) {
+                                    noteToMove.archived = true;
+                                    regularNotes = regularNotes.filter(n => n.id !== noteId);
+                                    archivedNotes.unshift(noteToMove);
+                                    notes = regularNotes;
+                                }
                                 renderNotes();
                                 showNotification('Note archived.');
                             } catch (error) {
@@ -675,8 +726,8 @@
                                 showNotification('Failed to archive note.');
                             }
                         });
-                        card.appendChild(archiveIcon);
                     }
+                    card.appendChild(actionIcon);
 
                     notesContainer.appendChild(card);
                 });
@@ -872,8 +923,11 @@
                         `}
 
                         <div class="sidebar-footer">
-                            <button class="action-btn" id="${isArchivePage ? 'unarchiveNoteBtn' : 'archiveNoteBtn'}" title="${isArchivePage ? 'Unarchive Note' : 'Archive Note'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                            <button class="action-btn" id="${showArchived ? 'unarchiveNoteBtn' : 'archiveNoteBtn'}" title="${showArchived ? 'Unarchive Note' : 'Archive Note'}">
+                                ${showArchived ?
+                                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/><line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="2"/></svg>` :
+                                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`
+                                }
                             </button>
                             <button class="action-btn" id="deleteNoteBtn" title="Delete Note">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -1088,9 +1142,16 @@
 
                 try {
                     const result = await api.updateNote(editingNoteId, title, content, currentTags);
-                    const index = notes.findIndex(n => n.id === editingNoteId);
-                    if (index !== -1) notes[index] = result.note;
-                    saveNotesToCache(notes); // Update cache
+                    // Update in appropriate array
+                    if (showArchived) {
+                        const index = archivedNotes.findIndex(n => n.id === editingNoteId);
+                        if (index !== -1) archivedNotes[index] = result.note;
+                        notes = archivedNotes;
+                    } else {
+                        const index = regularNotes.findIndex(n => n.id === editingNoteId);
+                        if (index !== -1) regularNotes[index] = result.note;
+                        notes = regularNotes;
+                    }
                     renderNotes(); // Refresh grid in case content changed
                     // Removed alert for auto-save
                 } catch (error) {
@@ -1103,7 +1164,21 @@
                 if (!editingNoteId) return;
                 try {
                     await api.archiveNote(editingNoteId, archive);
-                    notes = notes.filter(n => n.id !== editingNoteId);
+                    // Move note between arrays
+                    const noteToMove = showArchived ? archivedNotes.find(n => n.id === editingNoteId) : regularNotes.find(n => n.id === editingNoteId);
+                    if (noteToMove) {
+                        noteToMove.archived = archive;
+                        if (archive) {
+                            // Move from regular to archived
+                            regularNotes = regularNotes.filter(n => n.id !== editingNoteId);
+                            archivedNotes.unshift(noteToMove);
+                        } else {
+                            // Move from archived to regular
+                            archivedNotes = archivedNotes.filter(n => n.id !== editingNoteId);
+                            regularNotes.unshift(noteToMove);
+                        }
+                        notes = showArchived ? archivedNotes : regularNotes;
+                    }
                     renderNotes();
                     closeNoteModal();
                     showNotification(archive ? 'Note archived.' : 'Note unarchived.');
@@ -1117,8 +1192,14 @@
                 if (!editingNoteId) return;
                 try {
                     await api.deleteNote(editingNoteId);
-                    notes = notes.filter(n => n.id !== editingNoteId);
-                    saveNotesToCache(notes); // Update cache
+                    // Remove from appropriate array
+                    if (showArchived) {
+                        archivedNotes = archivedNotes.filter(n => n.id !== editingNoteId);
+                        notes = archivedNotes;
+                    } else {
+                        regularNotes = regularNotes.filter(n => n.id !== editingNoteId);
+                        notes = regularNotes;
+                    }
                     renderNotes();
                     closeNoteModal();
                 } catch (error) {
@@ -1277,9 +1358,11 @@
 
                 try {
                     const newNote = await api.createNote(title, content);
-                    notes.unshift(newNote.note); // Add to the beginning of the array
-                    saveNotesToCache(notes); // Update cache
-                    renderNotes();
+                    regularNotes.unshift(newNote.note); // Add to regular notes
+                    if (!showArchived) {
+                        notes = regularNotes;
+                        renderNotes();
+                    }
                     closeCreateModal();
                 } catch (error) {
                     console.error('Create note failed:', error);
@@ -1296,18 +1379,42 @@
                 }
             });
 
+            // --- Toggle Archive View ---
+            function toggleArchiveView() {
+                showArchived = !showArchived;
+                notes = showArchived ? archivedNotes : regularNotes;
+                renderNotes();
+                updateUI();
+            }
+
+            function updateUI() {
+                headerTitle.textContent = showArchived ? 'Archived' : 'Notes';
+                // Hide add button when showing archived
+                addNoteBtn.style.display = showArchived ? 'none' : 'flex';
+            }
+
             // --- Initialization ---
             async function init() {
                 try {
-                    // Then fetch fresh data from API
-                    const freshNotes = await api.getNotes(isArchivePage);
-                    notes = freshNotes;
+                    // Load both regular and archived notes
+                    const [regularData, archivedData] = await Promise.all([
+                        api.getNotes(false),
+                        api.getNotes(true)
+                    ]);
+                    regularNotes = regularData;
+                    archivedNotes = archivedData;
+                    notes = showArchived ? archivedNotes : regularNotes;
+                    dataLoaded = true;
                     renderNotes();
+                    updateUI();
                 } catch (error) {
                     console.error('Initialization failed:', error);
                     notesContainer.innerHTML = '<p style="text-align:center; color:var(--danger-color);">Could not load notes.</p>';
                 }
             }
+
+            // --- Event Listeners for Toggles ---
+            headerTitle.addEventListener('click', toggleArchiveView);
 
             init();
 
@@ -1327,7 +1434,7 @@
                     e.preventDefault();
                     searchInput.focus();
                 }
-                if (!isArchivePage && e.altKey && e.code === 'KeyN') {
+                if (!showArchived && e.altKey && e.code === 'KeyN') {
                     e.preventDefault();
                     // Close any open modals first
                     if (noteModal.style.display === 'flex') {
@@ -1337,7 +1444,7 @@
                     }
                     openCreateModal();
                 }
-                if (!isArchivePage && (e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
+                if (!showArchived && (e.ctrlKey || e.metaKey) && e.key === 'v' && !e.altKey && !e.shiftKey) {
                     // Check if we're not in an editable element (input, textarea, or contenteditable)
                     const activeElement = document.activeElement;
                     const isEditable = activeElement.tagName === 'INPUT' ||
