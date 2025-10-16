@@ -341,6 +341,94 @@ header .date:hover {
     gap: 0.5rem;
 }
 
+/* Custom Dropdown Styles */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+    min-width: 80px;
+}
+
+.dropdown-selected {
+    padding: 0.35rem 2rem 0.35rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    transition: var(--transition-fast);
+    user-select: none;
+}
+
+.dropdown-selected:focus {
+    border-color: var(--accent-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+.dropdown-arrow {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    color: var(--secondary-text-color);
+    transition: transform 0.2s ease;
+    pointer-events: none;
+}
+
+.custom-dropdown.open .dropdown-arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-light);
+}
+
+.custom-dropdown.open .dropdown-options {
+    max-height: 200px;
+    opacity: 1;
+}
+
+.dropdown-option {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--primary-text-color);
+    transition: background-color 0.15s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.dropdown-option:hover,
+.dropdown-option.active {
+    background-color: var(--accent-color);
+    color: var(--accent-color-inverted);
+}
+
+.custom-dropdown.open .dropdown-selected {
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    border-bottom-color: transparent;
+}
+
 .time-btn {
     padding: 0.35rem 0.75rem;
     border: 1px solid var(--border-color);
@@ -381,6 +469,7 @@ header .date:hover {
     position: relative;
     transition: var(--transition-fast);
     padding: 1.25rem;
+    overflow: hidden; /* Prevent content from overflowing the card */
 }
 
 .stat-card:hover {
@@ -393,6 +482,8 @@ header .date:hover {
     font-weight: 700;
     color: var(--primary-text-color);
     line-height: 1;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .stat-card .label {
@@ -400,6 +491,8 @@ header .date:hover {
     color: var(--secondary-text-color);
     margin-top: 0.5rem;
     font-weight: 600;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .stat-card .sublabel {
@@ -407,6 +500,37 @@ header .date:hover {
     color: var(--secondary-text-color);
     opacity: 0.7;
     margin-top: 0.25rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Mobile responsiveness for analytics cards */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 1rem; /* Reduce padding on mobile */
+    }
+
+    .stat-card .value {
+        font-size: 2rem; /* Slightly smaller value on mobile */
+    }
+
+    .stat-card .label {
+        font-size: 0.8rem;
+    }
+
+    .stat-card .sublabel {
+        font-size: 0.65rem;
+    }
+
+    /* Add bottom spacing to analytics container on mobile */
+    #analyticsContainer {
+        padding-bottom: 60px; /* Space for FAB and better scrolling */
+    }
 }
 
 .streak-card {
