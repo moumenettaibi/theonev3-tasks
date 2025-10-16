@@ -73,9 +73,9 @@
                         <div class="sublabel">days</div>
                     </div>
                     <div class="stat-card">
-                        <div class="value" id="bestStreakStat">0</div>
-                        <div class="label">Current Streak</div>
-                        <div class="sublabel">days</div>
+                        <div class="value" id="perfectStreakStat">0</div>
+                        <div class="label">Perfect Streak</div>
+                        <div class="sublabel">100% days</div>
                     </div>
                     <div class="stat-card">
                         <div class="value" id="weeklyCompletionStat">0%</div>
@@ -346,7 +346,7 @@
         function renderAnalytics() {
             const analytics = calculateComprehensiveAnalytics();
             document.getElementById('currentStreakStat').textContent = analytics.currentStreak;
-            document.getElementById('bestStreakStat').textContent = analytics.bestStreak;
+            document.getElementById('perfectStreakStat').textContent = analytics.perfectStreak;
             document.getElementById('weeklyCompletionStat').textContent = analytics.weeklyCompletion + '%';
             document.getElementById('consistencyScoreStat').textContent = analytics.consistencyScore + '%';
             document.getElementById('peakDayStat').textContent = analytics.peakDay;
@@ -490,9 +490,9 @@
             }
             const labels = []; const data = new Array(numDays).fill(0); for (let i = numDays - 1; i >= 0; i--) { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setDate(d.getDate() - i); const dateString = formatDateString(d); labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); const dayTasks = getTasksForDate(d); const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); const percentage = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0; data[numDays - 1 - i] = percentage; } return { labels, data };
          }
-        function calculateComprehensiveAnalytics() { return { currentStreak: calculateCurrentStreak(), bestStreak: calculateBestStreak(), weeklyCompletion: calculateWeeklyCompletion(), consistencyScore: calculateConsistencyScore(), peakDay: calculatePeakDay(), hardestTask: calculateHardestTask(), momentum: calculateMomentum(), dailyAverage: calculateDailyAverage(), monthlyImprovement: calculateMonthlyImprovement(), bestCategory: calculateBestCategory(), weeklyGoals: calculateWeeklyGoals(), activeHabits: calculateActiveHabits(), weeklyData: calculateWeeklyData() }; }
+        function calculateComprehensiveAnalytics() { return { currentStreak: calculateCurrentStreak(), perfectStreak: calculatePerfectStreak(), weeklyCompletion: calculateWeeklyCompletion(), consistencyScore: calculateConsistencyScore(), peakDay: calculatePeakDay(), hardestTask: calculateHardestTask(), momentum: calculateMomentum(), dailyAverage: calculateDailyAverage(), monthlyImprovement: calculateMonthlyImprovement(), bestCategory: calculateBestCategory(), weeklyGoals: calculateWeeklyGoals(), activeHabits: calculateActiveHabits(), weeklyData: calculateWeeklyData() }; }
         function calculateCurrentStreak() { let streak = 0; const today = new Date(); for (let i = 0; i < 365; i++) { const checkDate = new Date(today); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { if (i === 0) continue; else break; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length > 0) { streak++; } else { break; } } return streak; }
-        function calculateBestStreak() { let bestStreak = 0; let currentStreak = 0; for (let i = 364; i >= 0; i--) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { currentStreak = 0; continue; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { currentStreak++; } else { currentStreak = 0; } bestStreak = Math.max(bestStreak, currentStreak); } return bestStreak; }
+        function calculatePerfectStreak() { let bestStreak = 0; let currentStreak = 0; for (let i = 364; i >= 0; i--) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length === 0) { currentStreak = 0; continue; } const completedTasks = dayTasks.filter(task => task.completedOn[dateString] === true); if (completedTasks.length === dayTasks.length) { currentStreak++; } else { currentStreak = 0; } bestStreak = Math.max(bestStreak, currentStreak); } return bestStreak; }
         function calculateWeeklyCompletion() { let totalTasks = 0, completedTasks = 0; for (let i = 0; i < 7; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); totalTasks += dayTasks.length; completedTasks += dayTasks.filter(task => task.completedOn[dateString] === true).length; } return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0; }
         function calculateConsistencyScore() { let daysWithTasks = 0, daysCompleted = 0; for (let i = 0; i < 30; i++) { const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - i); const dateString = formatDateString(checkDate); const dayTasks = getTasksForDate(checkDate); if (dayTasks.length > 0) { daysWithTasks++; const completed = dayTasks.filter(task => task.completedOn[dateString] === true); if (completed.length > 0) daysCompleted++; } } return daysWithTasks > 0 ? Math.round((daysCompleted / daysWithTasks) * 100) : 0; }
         function calculatePeakDay() { const dayCounts = { 'Su': 0, 'Mo': 0, 'Tu': 0, 'We': 0, 'Th': 0, 'Fr': 0, 'Sa': 0 }; const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; tasks.forEach(task => { Object.keys(task.completedOn).forEach(dateStr => { if (task.completedOn[dateStr]) { const d = new Date(dateStr); const dayOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()]; dayCounts[dayOfWeek]++; } }); }); const peakDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b); const dayIndex = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].indexOf(peakDay); return dayNames[dayIndex] || '-'; }
