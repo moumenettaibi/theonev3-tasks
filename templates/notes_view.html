@@ -20,6 +20,7 @@
                     <div id="appDropdown" class="dropdown-content">
                         <a href="/~">Yajora Tasks</a>
                         <a href="/notes">Yajora Notes</a>
+                        <a href="/calendar">Yajora Calendar</a>
                     </div>
                 </div>
                 <h1 id="headerTitle">Notes</h1>
@@ -795,7 +796,7 @@
                         mainContentHTML = `
                             <div class="media-preview-container">
                                 <img src="${posterUrl}" loading="lazy" class="media-poster-preview" alt="Poster">
-                                ${url ? `<a href="${url}" target="_blank" class="view-details-btn">View Details</a>` : ''}
+                                ${url ? `` : ''}
                             </div>`;
                         break;
                     case 'Wikipedia':

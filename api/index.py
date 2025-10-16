@@ -168,6 +168,37 @@ def run_migrations():
                 cur.execute("ALTER TABLE notes ADD COLUMN archived BOOLEAN NOT NULL DEFAULT false;")
                 print(" -> Added 'archived' column to 'notes' table.")
 
+            # Add calendar-related columns to tasks if they don't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='description';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN description TEXT;")
+                print(" -> Added 'description' column to 'tasks' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='start_datetime';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN start_datetime TIMESTAMP WITH TIME ZONE;")
+                print(" -> Added 'start_datetime' column to 'tasks' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='end_datetime';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN end_datetime TIMESTAMP WITH TIME ZONE;")
+                print(" -> Added 'end_datetime' column to 'tasks' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='tags';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN tags JSONB;")
+                print(" -> Added 'tags' column to 'tasks' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='priority';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'medium';")
+                print(" -> Added 'priority' column to 'tasks' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='checkmark_status';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE tasks ADD COLUMN checkmark_status TEXT DEFAULT 'pending';")
+                print(" -> Added 'checkmark_status' column to 'tasks' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -212,15 +243,21 @@ def load_user(user_id):
 def read_user_tasks():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date FROM tasks WHERE user_id = %s;", (current_user.id,))
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date, description, start_datetime, end_datetime, tags, priority, checkmark_status FROM tasks WHERE user_id = %s;", (current_user.id,))
             tasks = cur.fetchall()
-            
+
     for task in tasks:
         task['id'] = str(task['id'])
         task['completedOn'] = task.pop('completed_on')
         task['habitTracker'] = task.pop('habit_tracker')
         task['isOneTime'] = task.pop('is_one_time')
         task['creationDate'] = task.pop('creation_date')
+        task['description'] = task.pop('description')
+        task['startDateTime'] = task.pop('start_datetime').isoformat() if task['start_datetime'] else None
+        task['endDateTime'] = task.pop('end_datetime').isoformat() if task['end_datetime'] else None
+        task['tags'] = task.pop('tags') or []
+        task['priority'] = task.pop('priority') or 'medium'
+        task['checkmarkStatus'] = task.pop('checkmark_status') or 'pending'
         # Convert date objects to strings, if they exist
         if task['date']:
             task['date'] = task['date'].isoformat()
@@ -233,7 +270,7 @@ def write_user_tasks(tasks):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM tasks WHERE user_id = %s;", (current_user.id,))
-            
+
             if tasks:
                 task_values = [
                     (
@@ -246,15 +283,21 @@ def write_user_tasks(tasks):
                         json.dumps(task.get('habitTracker')),
                         task.get('isOneTime', False),
                         task.get('date'),
-                        task.get('creationDate')
+                        task.get('creationDate'),
+                        task.get('description'),
+                        task.get('startDateTime'),
+                        task.get('endDateTime'),
+                        json.dumps(task.get('tags', [])),
+                        task.get('priority', 'medium'),
+                        task.get('checkmarkStatus', 'pending')
                     )
                     for task in tasks
                 ]
-                
+
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
+                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date, description, start_datetime, end_datetime, tags, priority, checkmark_status)
                     VALUES %s
                     """,
                     task_values
@@ -305,13 +348,13 @@ def register():
             
             today_str = json.dumps(date.today().isoformat())
             default_tasks = [
-                {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str},
-                {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str}
+                {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Explore the analytics dashboard", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Add your first task", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Learn task editing", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Set up habit tracking", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Manage task groups", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Navigate dates", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Real-time synchronization", "startDateTime": None, "endDateTime": None, "tags": ["welcome"], "priority": "low", "checkmarkStatus": "pending"}
             ]
 
             if default_tasks:
@@ -326,14 +369,20 @@ def register():
                         json.dumps(task.get('habitTracker')),
                         task.get('isOneTime', False),
                         task.get('date'),
-                        task.get('creationDate')
+                        task.get('creationDate'),
+                        task.get('description'),
+                        task.get('startDateTime'),
+                        task.get('endDateTime'),
+                        json.dumps(task.get('tags', [])),
+                        task.get('priority', 'medium'),
+                        task.get('checkmarkStatus', 'pending')
                     )
                     for task in default_tasks
                 ]
                 psycopg2.extras.execute_values(
                     cur,
                     """
-                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date)
+                    INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date, description, start_datetime, end_datetime, tags, priority, checkmark_status)
                     VALUES %s
                     """,
                     task_values
@@ -368,6 +417,12 @@ def home():
 def app_dashboard():
     tasks_data = read_user_tasks()
     return render_template('index.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, initial_tasks=tasks_data)
+
+@app.route('/calendar')
+@login_required
+def calendar_page():
+    tasks_data = read_user_tasks()
+    return render_template('calendar.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, initial_tasks=tasks_data)
 
 @app.route('/notes')
 @login_required
@@ -990,6 +1045,58 @@ def handle_tasks():
         socketio.emit('tasks_updated', new_tasks, to=current_user.id)
         return jsonify({'success': True, 'message': 'Tasks saved and synced.'})
 
+@app.route('/api/tasks/<task_id>', methods=['PUT'])
+@login_required
+def update_task(task_id):
+    """Update a specific task with calendar fields"""
+    data = request.get_json()
+
+    # Get current tasks
+    tasks = read_user_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    # Update allowed fields
+    allowed_fields = ['text', 'description', 'startDateTime', 'endDateTime', 'priority', 'tags', 'checkmarkStatus', 'group', 'date']
+    for field in allowed_fields:
+        if field in data:
+            task[field] = data[field]
+
+    # Save updated tasks
+    write_user_tasks(tasks)
+    socketio.emit('tasks_updated', tasks, to=current_user.id)
+
+    return jsonify({'success': True, 'message': 'Task updated successfully.'})
+
+@app.route('/api/calendar/tasks', methods=['GET'])
+@login_required
+def get_calendar_tasks():
+    """Get tasks formatted for calendar display"""
+    tasks = read_user_tasks()
+
+    # Filter and format tasks for calendar
+    calendar_tasks = []
+    for task in tasks:
+        calendar_task = {
+            'id': task['id'],
+            'title': task['text'],
+            'description': task.get('description'),
+            'start': task.get('startDateTime'),
+            'end': task.get('endDateTime'),
+            'priority': task.get('priority', 'medium'),
+            'tags': task.get('tags', []),
+            'status': task.get('checkmarkStatus', 'pending'),
+            'group': task.get('group'),
+            'isOneTime': task.get('isOneTime', False),
+            'date': task.get('date'),
+            'recurrence': task.get('recurrence', [])
+        }
+        calendar_tasks.append(calendar_task)
+
+    return jsonify(calendar_tasks)
+
 @app.route('/api/profile', methods=['POST'])
 @login_required
 def update_profile():
@@ -1051,4 +1158,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5004, allow_unsafe_werkzeug=True, use_reloader=False)
+    socketio.run(app, debug=True, port=5008, allow_unsafe_werkzeug=True, use_reloader=False)
