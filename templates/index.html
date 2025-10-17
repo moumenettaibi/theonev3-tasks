@@ -335,13 +335,17 @@
         let currentDisplayDate = new Date(); let editingTaskId = null; let editingHabitTaskId = null; let editingGroup = null; let groupToDelete = null; let completionTrendChart = null; let weeklyPerformanceChart = null;
         let completionTrendRange = '1M'; // Default time range
 
+        // Revision tagging for preventing echo overwrites
+        const clientId = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
+        let lastSyncRevision = null;
+
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false; let syncTimeout;
-        socket.on('tasks_updated', (updatedTasks) => { console.log('Received real-time task update from server.'); tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } if (analyticsContainer.style.display === 'block') { renderAnalytics(); } });
+        socket.on('tasks_updated', (payload) => { console.log('Received real-time task update from server.'); const { tasks: updatedTasks, revision } = Array.isArray(payload) ? { tasks: payload, revision: null } : payload || {}; if (revision && revision === lastSyncRevision) return; tasks = updatedTasks; if (tasksContainer.style.display === 'block' || tasksContainer.style.display === '') { renderTasks(); updateProgressBar(); } if (analyticsContainer.style.display === 'block') { renderAnalytics(); } });
         socket.on('connect', () => { console.log('WebSocket connected!'); });
         socket.on('disconnect', () => { console.log('WebSocket disconnected.'); });
-        async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tasks) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 200); }
+        async function syncTasksToServer() { clearTimeout(syncTimeout); syncTimeout = setTimeout(async () => { if (isSyncing) return; isSyncing = true; try { lastSyncRevision = `${clientId}:${Date.now()}`; const response = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasks, revision: lastSyncRevision }) }); if (!response.ok) throw new Error('Sync failed'); } catch (error) { console.error("Failed to sync tasks:", error); } finally { isSyncing = false; } }, 0); }
         async function handleLogout() { try { const response = await fetch('/logout', { method: 'POST' }); const result = await response.json(); if (response.ok) { window.location.href = result.redirect || '/'; } else { alert('Logout failed.'); } } catch (error) { alert('Could not connect to the server to log out.'); } }
 
         // --- VIEW SWITCHING, ANALYTICS, DATA-MGMT ---
@@ -860,8 +864,8 @@
         function saveCategory() { if (!editingGroup || !categoryInput.value.trim()) return; const newName = categoryInput.value.trim(); if (newName === editingGroup) { closeCategoryModal(); return; } tasks.forEach(task => { if (task.group === editingGroup) task.group = newName; }); syncTasksToServer(); closeCategoryModal(); updateView(); }
         function openDeleteGroupModal(groupName) { console.log('Opening delete confirmation for group:', groupName); if (deleteGroupModal) { groupToDelete = groupName; deleteGroupModalText.textContent = `Delete the "${groupName}" group? All tasks inside will be moved to Ungrouped.`; deleteGroupModal.style.display = 'flex'; console.log('Confirmation modal set to flex'); } else { console.log('deleteGroupModal is null, cannot open'); } }
         function closeDeleteGroupModal() { deleteGroupModal.style.display = 'none'; groupToDelete = null; }
-        function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); }
-        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); alert('Data imported successfully!'); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
+        function exportData() { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.download = `tasks-backup-${new Date().toISOString().slice(0, 10)}.json`; link.href = url; link.click(); URL.revokeObjectURL(url); alert('Data exported successfully!'); }
+        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const importedData = JSON.parse(e.target.result); if (!Array.isArray(importedData)) throw new Error('Invalid data format.'); if (confirm('This will overwrite all current tasks. Are you sure?')) { tasks = importedData.map(t => ({ ...t, id: t.id || generateUUID() })); syncTasksToServer(); showTasksView(); } } catch (error) { alert(`Error importing data: ${error.message}`); } finally { importFileInput.value = ''; } }; reader.readAsText(file); }
         // --- Dropdown Menu Logic ---
         logo.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -1061,7 +1065,6 @@
             try {
                 const response = await fetch('/api/profile', { method: 'POST', body: formData });
                 if (response.ok) {
-                    alert('Profile updated successfully!');
                     profileModal.style.display = 'none';
                     profileForm.reset();
                     window.location.reload(); // Reload to show updated profile image

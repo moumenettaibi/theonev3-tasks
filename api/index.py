@@ -1195,12 +1195,21 @@ def handle_tasks():
         return jsonify(tasks)
 
     if request.method == 'POST':
-        new_tasks = request.get_json()
+        data = request.get_json()
+        if isinstance(data, list):
+            # backward compat
+            new_tasks = data
+            revision = None
+        else:
+            new_tasks = data.get('tasks', [])
+            revision = data.get('revision')
+
         if not isinstance(new_tasks, list):
             return jsonify({'error': 'Invalid data format'}), 400
 
         write_user_tasks(new_tasks)
-        socketio.emit('tasks_updated', new_tasks, to=current_user.id)
+        # Echo revision so sender can ignore its own update
+        socketio.emit('tasks_updated', {'tasks': new_tasks, 'revision': revision}, to=current_user.id)
         return jsonify({'success': True, 'message': 'Tasks saved and synced.'})
 
 @app.route('/api/tasks/<task_id>', methods=['PUT'])
