@@ -1002,33 +1002,25 @@
                     </div>
                 `;
                 actionsDiv.innerHTML = `
-                    <button id="linkGoogleBtn" class="btn-secondary">
-                        <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 16px; height: 16px; margin-right: 8px;">
-                        Link Google Account
-                    </button>
+                    <div id="linkGoogleBtn"></div>
                 `;
 
-                // Add link event listener
-                document.getElementById('linkGoogleBtn').addEventListener('click', (e) => {
-                    e.preventDefault(); // Prevent form submission
-                    // Initialize Google Sign-In for linking
+                // Initialize Google Sign-In for linking
+                function initGoogleLink() {
                     if (typeof google !== 'undefined') {
                         google.accounts.id.initialize({
                             client_id: '869636240792-ovo58kt3343j45n8gfcheq5rcohbtd42.apps.googleusercontent.com',
                             callback: handleGoogleLinkResponse
                         });
-                        google.accounts.id.prompt((notification) => {
-                            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                                google.accounts.id.renderButton(
-                                    document.getElementById('linkGoogleBtn'),
-                                    { theme: 'outline', size: 'medium' }
-                                );
-                            }
-                        });
+                        google.accounts.id.renderButton(
+                            document.getElementById('linkGoogleBtn'),
+                            { theme: 'outline', size: 'medium' }
+                        );
                     } else {
-                        alert('Google Sign-In is not available.');
+                        setTimeout(initGoogleLink, 100);
                     }
-                });
+                }
+                initGoogleLink();
             }
         }
 
