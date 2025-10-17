@@ -7,3 +7,4 @@ python-dotenv
 requests
 wikipedia
 google-genai
+PyJWT

@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Socket.IO client library -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
 </head>
@@ -267,14 +269,6 @@
                 </div>
             </div>
             <form id="profileForm" class="profile-form">
-                <div class="form-section">
-                    <h4>Profile Picture</h4>
-                    <div class="form-group">
-                        <label for="profileImageInput">Upload new image:</label>
-                        <input type="file" id="profileImageInput" accept="image/*">
-                        <small>Supported formats: JPG, PNG, GIF. Max size: 5MB</small>
-                    </div>
-                </div>
 
                 <div class="form-section">
                     <h4>Account Information</h4>
@@ -294,6 +288,16 @@
                         <label for="passwordInput">New Password:</label>
                         <input type="password" id="passwordInput" placeholder="Enter new password (leave empty to keep current)">
                         <small>Leave empty if you don't want to change your password</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>Google Account</h4>
+                    <div class="google-account-status" id="googleAccountStatus">
+                        <!-- Google account status will be shown here -->
+                    </div>
+                    <div class="google-actions" id="googleActions">
+                        <!-- Link/Unlink buttons will be shown here -->
                     </div>
                 </div>
 
@@ -930,6 +934,8 @@
         const cancelProfileBtn = document.getElementById('cancelProfileBtn');
 
         profileBtn.addEventListener('click', () => {
+            updateGoogleAccountStatus(false); // Default state
+            loadProfileData();
             profileModal.style.display = 'flex';
         });
 
@@ -945,11 +951,114 @@
             }
         });
 
+        // Load profile data including Google account status
+        async function loadProfileData() {
+            try {
+                const response = await fetch('/api/profile');
+                if (response.ok) {
+                    const profileData = await response.json();
+                    console.log('Profile data loaded:', profileData); // Debug log
+                    updateGoogleAccountStatus(profileData.has_google_account);
+                } else {
+                    console.error('Failed to load profile data:', response.status);
+                    // Fallback: show link button if API fails
+                    updateGoogleAccountStatus(false);
+                }
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+                // Fallback: show link button if API fails
+                updateGoogleAccountStatus(false);
+            }
+        }
+
+        // Update Google account status display
+        function updateGoogleAccountStatus(hasGoogleAccount) {
+            console.log('Updating Google account status:', hasGoogleAccount); // Debug log
+            const statusDiv = document.getElementById('googleAccountStatus');
+            const actionsDiv = document.getElementById('googleActions');
+
+            if (!statusDiv || !actionsDiv) {
+                console.error('Google account status elements not found');
+                return;
+            }
+
+            if (hasGoogleAccount) {
+                statusDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; color: #34C759;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <span>Google account connected</span>
+                    </div>
+                `;
+                actionsDiv.innerHTML = ``; // Removed unlink functionality
+            } else {
+                statusDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; color: #8E8E93;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" opacity="0.3"/>
+                        </svg>
+                        <span>No Google account connected</span>
+                    </div>
+                `;
+                actionsDiv.innerHTML = `
+                    <button id="linkGoogleBtn" class="btn-secondary">
+                        <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 16px; height: 16px; margin-right: 8px;">
+                        Link Google Account
+                    </button>
+                `;
+
+                // Add link event listener
+                document.getElementById('linkGoogleBtn').addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent form submission
+                    // Initialize Google Sign-In for linking
+                    if (typeof google !== 'undefined') {
+                        google.accounts.id.initialize({
+                            client_id: '869636240792-ovo58kt3343j45n8gfcheq5rcohbtd42.apps.googleusercontent.com',
+                            callback: handleGoogleLinkResponse
+                        });
+                        google.accounts.id.prompt((notification) => {
+                            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                                google.accounts.id.renderButton(
+                                    document.getElementById('linkGoogleBtn'),
+                                    { theme: 'outline', size: 'medium' }
+                                );
+                            }
+                        });
+                    } else {
+                        alert('Google Sign-In is not available.');
+                    }
+                });
+            }
+        }
+
+        // Handle Google account linking response
+        async function handleGoogleLinkResponse(response) {
+            const token = response.credential;
+            console.log('Google link response received:', response); // Debug log
+            try {
+                const linkResponse = await fetch('/api/profile/link-google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const result = await linkResponse.json();
+                console.log('Link response:', linkResponse.status, result); // Debug log
+                if (linkResponse.ok) {
+                    alert('Google account linked successfully!');
+                    loadProfileData(); // Refresh the status
+                } else {
+                    alert(result.message || 'Failed to link Google account.');
+                }
+            } catch (error) {
+                console.error('Error linking Google account:', error);
+                alert('Error linking Google account.');
+            }
+        }
+
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
-            const imageFile = document.getElementById('profileImageInput').files[0];
-            if (imageFile) formData.append('profile_image', imageFile);
             const username = document.getElementById('usernameInput').value;
             if (username) formData.append('username', username);
             const email = document.getElementById('emailInput').value;
@@ -1015,7 +1124,6 @@
 
 
 
-        welcomeMessage.textContent = `Logged in as {{ username }}.`;
 
         showTasksView();
 

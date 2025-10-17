@@ -5,30 +5,256 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - YAJORA</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-        body { background: #F5F5F5; color: #333333; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-        .login-container { max-width: 400px; width: 100%; background: #FFFFFF; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-        h1 { text-align: center; font-size: 2rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem; }
-        .tagline { text-align: center; color: #666; margin-bottom: 2rem; }
-        .form-group { margin-bottom: 1.25rem; }
-        .form-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; }
-        .form-group input { width: 100%; padding: 0.8rem 1rem; border: 2px solid #E0E0E0; font-size: 1rem; border-radius: 8px; transition: border-color 0.3s ease; background: #FFFFFF; }
-        .form-group input:focus { border-color: #000000; outline: none; }
-        .button-group { display: flex; gap: 1rem; margin-top: 1.5rem; }
-        .button-group button { flex-grow: 1; padding: 0.8rem 1.25rem; border: 2px solid transparent; background: #000000; color: #FFFFFF; cursor: pointer; font-size: 1rem; border-radius: 8px; font-weight: 500; transition: all 0.2s ease; }
-        .button-group button#registerBtn { background: #FFFFFF; color: #000000; border-color: #E0E0E0; }
-        .button-group button:hover { opacity: 0.8; }
-        .button-group button#registerBtn:hover { background: #f0f0f0; border-color: #ccc; }
-        #error-message { color: #FF3B30; text-align: center; margin-top: 1.5rem; font-size: 0.9rem; min-height: 1.2em; }
-        .signup-link { text-align: center; margin-top: 1rem; }
-        .signup-link a { color: #000000; text-decoration: none; font-weight: 500; }
-        .signup-link a:hover { text-decoration: underline; }
+        /* --- CSS Custom Properties (Variables) for a Premium Black & White Theme --- */
+        :root {
+            --bg-color: #FDFDFD;
+            --primary-text-color: #1a1a1a;
+            --secondary-text-color: #6b6b6b;
+            --border-color: #EAEAEA;
+            --card-bg-color: #FFFFFF;
+            --accent-color: #1a1a1a;
+            --accent-color-inverted: #FFFFFF;
+            --danger-color: #D93B3B;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --border-radius-md: 10px;
+            --border-radius-lg: 16px;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.05);
+            --shadow-heavy: 0 8px 25px rgba(0, 0, 0, 0.1);
+            --transition-fast: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-main);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--primary-text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-container {
+            max-width: 400px;
+            width: 100%;
+            background: var(--card-bg-color);
+            padding: 2.5rem;
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-text-color);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            text-align: center;
+            color: var(--secondary-text-color);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-text-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            border-radius: var(--border-radius-md);
+            transition: var(--transition-fast);
+            background: var(--card-bg-color);
+            color: var(--primary-text-color);
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: var(--secondary-text-color);
+            opacity: 0.7;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .button-group button {
+            flex-grow: 1;
+            padding: 0.8rem 1.25rem;
+            border: 1px solid var(--accent-color);
+            background: var(--accent-color);
+            color: var(--accent-color-inverted);
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: var(--border-radius-md);
+            font-weight: 600;
+            transition: var(--transition-fast);
+            text-align: center;
+        }
+
+        .button-group button:hover {
+            background: var(--secondary-text-color);
+            border-color: var(--secondary-text-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        /* Removed custom google-btn styles since we're using Google's rendered button */
+
+        /* Style the rendered Google Sign-In button to match the custom button */
+        .g_id_signin {
+            background: var(--card-bg-color) !important;
+            color: var(--primary-text-color) !important;
+            border: 1px solid var(--border-color) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            margin-top: 1rem !important;
+            padding: 0.8rem 1.25rem !important;
+            border-radius: var(--border-radius-md) !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: var(--transition-fast) !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            position: relative !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+        }
+
+        .g_id_signin:hover {
+            background: var(--border-color) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: var(--shadow-light) !important;
+        }
+
+        .g_id_signin .g_id_signin_inner {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+        }
+
+        .g_id_signin img {
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        /* Hide any underlying buttons or elements */
+        .g_id_signin button,
+        .g_id_signin .g_id_signin_inner button {
+            display: none !important;
+        }
+
+        /* Removed styling for the Google Sign-In popup/modal div */
+
+        #error-message {
+            color: var(--danger-color);
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            min-height: 1.2em;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .signup-link a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition-fast);
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+            color: var(--secondary-text-color);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 2.5rem 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider span {
+            background: var(--card-bg-color);
+            padding: 1rem 1.5rem;
+            color: var(--secondary-text-color);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: -0.5rem;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .login-container {
+                padding: 2rem;
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .tagline {
+                font-size: 0.95rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>Welcome</h1>
+        <h1>Welcome Back</h1>
         <p class="tagline">Sign in or create an account to continue</p>
         <form id="authForm">
             <div class="form-group">
@@ -44,11 +270,16 @@
                 <button type="submit" id="loginBtn">Login</button>
             </div>
         </form>
+        <div class="divider">
+            <span>or</span>
+        </div>
+        <div id="googleBtn"></div>
         <div class="signup-link">
             <a href="/signup">Don't have an account? Register here</a>
         </div>
     </div>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         const authForm = document.getElementById('authForm');
         const loginBtn = document.getElementById('loginBtn');
@@ -83,6 +314,28 @@
             }
             sendAuthRequest('/login', { username, password });
         });
+
+        // Google Sign-In
+        function initGoogleSignIn() {
+            if (typeof google !== 'undefined') {
+                google.accounts.id.initialize({
+                    client_id: '869636240792-ovo58kt3343j45n8gfcheq5rcohbtd42.apps.googleusercontent.com',
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById('googleBtn'),
+                    { theme: 'outline', size: 'large' }
+                );
+            } else {
+                setTimeout(initGoogleSignIn, 100);
+            }
+        }
+        initGoogleSignIn();
+
+        function handleCredentialResponse(response) {
+            const token = response.credential;
+            sendAuthRequest('/auth/google', { token });
+        }
 
     </script>
 </body>

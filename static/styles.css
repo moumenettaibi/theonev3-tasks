@@ -2635,6 +2635,57 @@ body:has(.landing-hero) .container {
     padding: 0;
 }
 
+/* Google Account Section Styling */
+.google-account-section {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-light);
+}
+
+.google-account-section h4 {
+    margin-bottom: 1rem;
+    color: var(--primary-text-color);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.google-account-status {
+    margin-bottom: 1rem;
+}
+
+.google-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.google-actions .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text-color);
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    transition: var(--transition-fast);
+    cursor: pointer;
+}
+
+.google-actions .btn-secondary:hover {
+    background: var(--accent-color);
+    color: var(--accent-color-inverted);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-light);
+}
+
 .profile-header {
     padding: 2rem 2rem 1.5rem;
     border-bottom: 1px solid var(--border-color);

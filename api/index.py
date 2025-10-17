@@ -14,8 +14,9 @@ from contextlib import contextmanager
 from datetime import timedelta, date # --- MODIFIED: Imported timedelta
 import threading
 from urllib.parse import quote
+import jwt
 
-from flask import Flask, render_template, request, jsonify, session # --- MODIFIED: Imported session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for # --- MODIFIED: Imported session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, join_room, emit
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -199,6 +200,17 @@ def run_migrations():
                 cur.execute("ALTER TABLE tasks ADD COLUMN checkmark_status TEXT DEFAULT 'pending';")
                 print(" -> Added 'checkmark_status' column to 'tasks' table.")
 
+            # Add oauth_provider and oauth_id columns to users if they don't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='oauth_provider';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE users ADD COLUMN oauth_provider TEXT;")
+                print(" -> Added 'oauth_provider' column to 'users' table.")
+
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='oauth_id';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE users ADD COLUMN oauth_id TEXT;")
+                print(" -> Added 'oauth_id' column to 'users' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -211,12 +223,14 @@ login_manager.init_app(app)
 login_manager.login_view = 'login_page'
 
 class User(UserMixin):
-    def __init__(self, id, username, password_hash, email=None, profile_image=None):
+    def __init__(self, id, username, password_hash, email=None, profile_image=None, oauth_provider=None, oauth_id=None):
         self.id = id
         self.username = username
         self.password_hash = password_hash
         self.email = email
         self.profile_image = profile_image
+        self.oauth_provider = oauth_provider
+        self.oauth_id = oauth_id
 
 def get_user_by_username(username):
     with get_db_connection() as conn:
@@ -224,7 +238,7 @@ def get_user_by_username(username):
             cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'))
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
     return None
 
 def get_user_by_id(user_id):
@@ -233,7 +247,16 @@ def get_user_by_id(user_id):
             cur.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'))
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
+    return None
+
+def get_user_by_oauth(oauth_provider, oauth_id):
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE oauth_provider = %s AND oauth_id = %s;", (oauth_provider, oauth_id))
+            user_data = cur.fetchone()
+    if user_data:
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
     return None
 
 @login_manager.user_loader
@@ -399,7 +422,142 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'}) 
+    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect': '/'})
+
+# --- OAuth Routes ---
+@app.route('/auth/google', methods=['POST'])
+def google_auth():
+    data = request.get_json()
+    token = data.get('token')
+    link_account = data.get('link_account', False)  # New parameter to indicate account linking
+
+    if not token:
+        return jsonify({'success': False, 'message': 'No token provided.'}), 400
+
+    try:
+        # Decode the JWT token from Google
+        decoded = jwt.decode(token, options={"verify_signature": False})  # In production, verify signature
+        google_id = decoded.get('sub')
+        email = decoded.get('email')
+        name = decoded.get('name')
+        picture = decoded.get('picture')
+
+        if not google_id or not email:
+            return jsonify({'success': False, 'message': 'Invalid token data.'}), 400
+
+        # Check if user exists by OAuth
+        oauth_user = get_user_by_oauth('google', google_id)
+
+        if link_account and current_user.is_authenticated:
+            # Linking Google account to existing user
+            if oauth_user and oauth_user.id != current_user.id:
+                return jsonify({'success': False, 'message': 'This Google account is already linked to another user.'}), 409
+            elif current_user.oauth_id:
+                return jsonify({'success': False, 'message': 'Your account is already linked to a Google account.'}), 409
+            else:
+                # Link the Google account to current user
+                with get_db_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "UPDATE users SET oauth_provider = %s, oauth_id = %s, email = %s, profile_image = COALESCE(profile_image, %s) WHERE id = %s;",
+                            ('google', google_id, email, picture, current_user.id)
+                        )
+                        conn.commit()
+                return jsonify({'success': True, 'message': 'Google account linked successfully!'})
+
+        # Check if user exists by email (for account linking)
+        email_user = None
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE email = %s;", (email,))
+                user_data = cur.fetchone()
+                if user_data:
+                    email_user = User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
+
+        if oauth_user:
+            # Existing OAuth user, log them in
+            login_user(oauth_user)
+            session.permanent = True
+            return jsonify({'success': True, 'message': 'Logged in with Google!', 'redirect': '/~'})
+        elif email_user and not email_user.oauth_id:
+            # Existing user with same email but no OAuth - offer to link
+            return jsonify({
+                'success': False,
+                'message': 'An account with this email already exists. Would you like to link your Google account?',
+                'can_link': True,
+                'email': email
+            }), 409
+        else:
+            # New user, create account
+            new_user_id = str(uuid.uuid4())
+            username = email.split('@')[0]  # Use email prefix as username
+
+            # Ensure username is unique
+            counter = 1
+            original_username = username
+            while get_user_by_username(username):
+                username = f"{original_username}{counter}"
+                counter += 1
+
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO users (id, username, password_hash, email, profile_image, oauth_provider, oauth_id) VALUES (%s, %s, %s, %s, %s, %s, %s);",
+                        (new_user_id, username, '', email, picture, 'google', google_id)
+                    )
+
+                    # Add default tasks for new OAuth users
+                    today_str = json.dumps(date.today().isoformat())
+                    default_tasks = [
+                        {"id": str(uuid.uuid4()), "text": "Click the 'Tasks' title to see your analytics", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Explore the analytics dashboard", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Click the '+' button to add a new task", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Add your first task", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Click this task's text to edit or delete it", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Learn task editing", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Click the '0/21' badge to set a habit goal", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Set up habit tracking", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Click a group name to delete the group", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Manage task groups", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Use the '‹' and '›' arrows to change the date", "group": "App Features", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Navigate dates", "startDateTime": None, "endDateTime": None, "tags": ["tutorial"], "priority": "low", "checkmarkStatus": "pending"},
+                        {"id": str(uuid.uuid4()), "text": "Changes on this device instantly sync everywhere!", "group": "Welcome", "recurrence": ["Daily"], "isOneTime": False, "date": None, "completedOn": {}, "habitTracker": {"goal": 21, "completedDates": []}, "creationDate": today_str, "description": "Real-time synchronization", "startDateTime": None, "endDateTime": None, "tags": ["welcome"], "priority": "low", "checkmarkStatus": "pending"}
+                    ]
+
+                    if default_tasks:
+                        task_values = [
+                            (
+                                task['id'],
+                                new_user_id,
+                                task['text'],
+                                task.get('group'),
+                                json.dumps(task['recurrence']),
+                                json.dumps(task['completedOn']),
+                                json.dumps(task.get('habitTracker')),
+                                task.get('isOneTime', False),
+                                task.get('date'),
+                                task.get('creationDate'),
+                                task.get('description'),
+                                task.get('startDateTime'),
+                                task.get('endDateTime'),
+                                json.dumps(task.get('tags', [])),
+                                task.get('priority', 'medium'),
+                                task.get('checkmarkStatus', 'pending')
+                            )
+                            for task in default_tasks
+                        ]
+                        psycopg2.extras.execute_values(
+                            cur,
+                            """
+                            INSERT INTO tasks (id, user_id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date, description, start_datetime, end_datetime, tags, priority, checkmark_status)
+                            VALUES %s
+                            """,
+                            task_values
+                        )
+                conn.commit()
+
+            new_user = get_user_by_id(new_user_id)
+            login_user(new_user)
+            session.permanent = True
+            return jsonify({'success': True, 'message': 'Account created with Google!', 'redirect': '/~'})
+
+    except Exception as e:
+        print(f"Google auth error: {e}")
+        return jsonify({'success': False, 'message': 'Authentication failed.'}), 500
 
 # --- Main Application Routes ---
 @app.route('/')
@@ -1097,9 +1255,19 @@ def get_calendar_tasks():
 
     return jsonify(calendar_tasks)
 
-@app.route('/api/profile', methods=['POST'])
+@app.route('/api/profile', methods=['GET', 'POST'])
 @login_required
 def update_profile():
+    if request.method == 'GET':
+        # Return profile information including Google account status
+        return jsonify({
+            'username': current_user.username,
+            'email': current_user.email,
+            'profile_image': current_user.profile_image,
+            'has_google_account': bool(current_user.oauth_provider == 'google' and current_user.oauth_id)
+        })
+
+    # POST method for updating profile
     profile_image = request.files.get('profile_image')
     username = request.form.get('username')
     email = request.form.get('email')
@@ -1142,6 +1310,69 @@ def update_profile():
             conn.commit()
 
     return jsonify({'success': True, 'message': 'Profile updated successfully.'})
+
+@app.route('/api/profile/link-google', methods=['POST'])
+@login_required
+def link_google_account():
+    data = request.get_json()
+    token = data.get('token')
+
+    if not token:
+        return jsonify({'success': False, 'message': 'No token provided.'}), 400
+
+    try:
+        # Decode the JWT token from Google
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        google_id = decoded.get('sub')
+        email = decoded.get('email')
+        picture = decoded.get('picture')
+
+        if not google_id:
+            return jsonify({'success': False, 'message': 'Invalid token data.'}), 400
+
+        # Check if this Google account is already linked to another user
+        existing_oauth_user = get_user_by_oauth('google', google_id)
+        if existing_oauth_user and existing_oauth_user.id != current_user.id:
+            return jsonify({'success': False, 'message': 'This Google account is already linked to another user.'}), 409
+
+        # Check if current user already has a Google account linked
+        if current_user.oauth_id:
+            return jsonify({'success': False, 'message': 'Your account is already linked to a Google account.'}), 409
+
+        # Link the Google account
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET oauth_provider = %s, oauth_id = %s, email = %s, profile_image = COALESCE(profile_image, %s) WHERE id = %s;",
+                    ('google', google_id, email, picture, current_user.id)
+                )
+                conn.commit()
+
+        return jsonify({'success': True, 'message': 'Google account linked successfully!'})
+
+    except Exception as e:
+        print(f"Google linking error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to link Google account.'}), 500
+
+@app.route('/api/profile/unlink-google', methods=['POST'])
+@login_required
+def unlink_google_account():
+    if not current_user.oauth_provider or current_user.oauth_provider != 'google':
+        return jsonify({'success': False, 'message': 'No Google account linked.'}), 400
+
+    # Check if user has a password set (OAuth-only users shouldn't be able to unlink)
+    if not current_user.password_hash or current_user.password_hash == '':
+        return jsonify({'success': False, 'message': 'Cannot unlink Google account as it\'s your only sign-in method. Please set a password first.'}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET oauth_provider = NULL, oauth_id = NULL WHERE id = %s;",
+                (current_user.id,)
+            )
+            conn.commit()
+
+    return jsonify({'success': True, 'message': 'Google account unlinked successfully!'})
 
 # --- WebSocket Event Handlers ---
 @socketio.on('connect')
