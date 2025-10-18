@@ -1,8 +1,4 @@
-/* ==========================================================================
-   NOTES PAGE STYLESHEET (V5 - Centered Inspector Modal)
-   ========================================================================== */
 
-/* --- CSS Custom Properties (Variables) --- */
 :root {
     --bg-color: #FDFDFD;
     --primary-text-color: #1a1a1a;
@@ -834,13 +830,7 @@ mark {
    ========================================================================== */
 
 .ql-toolbar {
-    background: var(--card-bg-color) !important;
-    border: 1px solid var(--border-color) !important;
-    border-top-left-radius: var(--border-radius-md) !important;
-    border-top-right-radius: var(--border-radius-md) !important;
-    border-bottom: none !important;
-    padding: 12px 8px !important;
-    transition: var(--transition-fast);
+    display: none !important;
 }
 
 .ql-container {
@@ -921,11 +911,21 @@ mark {
     color: var(--primary-text-color);
     font-weight: 700;
     margin-bottom: 1rem;
-    padding-bottom: 0.3em;
+    transition: all 0.2s ease;
+    padding: 0.5rem 0;
+    position: relative;
 }
-.ql-editor h1 { font-size: 1.75rem; }
+.ql-editor h1 { font-size: 2rem; }
 .ql-editor h2 { font-size: 1.5rem; }
 .ql-editor h3 { font-size: 1.25rem; }
+
+/* Block hover effects */
+.ql-editor h1:hover, .ql-editor h2:hover, .ql-editor h3:hover {
+    background-color: rgba(var(--accent-color), 0.02);
+    padding-left: 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: 4px;
+}
 
 .ql-editor p, .ql-editor ol, .ql-editor ul {
     margin-bottom: 1rem;

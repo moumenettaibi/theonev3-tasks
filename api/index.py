@@ -1015,6 +1015,7 @@ def create_note():
     data = request.get_json()
     title = data.get('title', '').strip()
     content = data.get('content', '')
+    revision = data.get('revision')
 
     note_type, metadata = analyze_note_content(content)
     tags = extract_tags(content)
@@ -1062,6 +1063,10 @@ def create_note():
 
     new_note['created_at'] = new_note['created_at'].isoformat()
     new_note['updated_at'] = new_note['updated_at'].isoformat()
+
+    # Emit real-time update with revision
+    socketio.emit('notes_updated', {'notes': [new_note], 'revision': revision}, to=current_user.id)
+
     return jsonify({'success': True, 'message': 'Note created successfully.', 'note': new_note}), 201
 
 @app.route('/api/notes/<uuid:note_id>', methods=['PUT'])
@@ -1071,6 +1076,7 @@ def update_note(note_id):
     title = data.get('title')
     content = data.get('content')
     tags = data.get('tags')
+    revision = data.get('revision')
 
     if title is None and content is None and tags is None:
         return jsonify({'success': False, 'message': 'No fields to update.'}), 400
@@ -1116,11 +1122,18 @@ def update_note(note_id):
 
     updated_note['created_at'] = updated_note['created_at'].isoformat()
     updated_note['updated_at'] = updated_note['updated_at'].isoformat()
+
+    # Emit real-time update with revision
+    socketio.emit('notes_updated', {'notes': [updated_note], 'revision': revision}, to=current_user.id)
+
     return jsonify({'success': True, 'message': 'Note updated successfully.', 'note': updated_note})
 
 @app.route('/api/notes/<uuid:note_id>', methods=['DELETE'])
 @login_required
 def delete_note(note_id):
+    data = request.get_json() or {}
+    revision = data.get('revision')
+
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -1130,6 +1143,10 @@ def delete_note(note_id):
             if cur.rowcount == 0:
                 return jsonify({'success': False, 'message': 'Note not found or you do not have permission to delete it.'}), 404
             conn.commit()
+
+    # Emit real-time update with revision
+    socketio.emit('notes_updated', {'deleted_note_id': str(note_id), 'revision': revision}, to=current_user.id)
+
     return jsonify({'success': True, 'message': 'Note deleted successfully.'})
 
 @app.route('/api/notes/<uuid:note_id>/archive', methods=['PUT'])
@@ -1137,6 +1154,8 @@ def delete_note(note_id):
 def archive_note(note_id):
     data = request.get_json()
     archived = data.get('archived', True)
+    revision = data.get('revision')
+
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -1146,6 +1165,10 @@ def archive_note(note_id):
             if cur.rowcount == 0:
                 return jsonify({'success': False, 'message': 'Note not found or permission denied.'}), 404
             conn.commit()
+
+    # Emit real-time update with revision
+    socketio.emit('notes_updated', {'archived_note_id': str(note_id), 'archived': archived, 'revision': revision}, to=current_user.id)
+
     return jsonify({'success': True, 'message': f'Note {"archived" if archived else "unarchived"} successfully.'})
 
 @app.route('/api/notes/<uuid:note_id>/generate-tldr', methods=['POST'])

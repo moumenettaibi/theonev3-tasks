@@ -206,6 +206,72 @@
             let showArchived = false;
             let dataLoaded = false;
 
+            // Revision tagging for preventing echo overwrites
+            const clientId = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
+            let lastSyncRevision = null;
+
+            // Quill Markdown Shortcuts Class
+            class QuillMarkdownShortcuts {
+              constructor(quill) {
+                this.quill = quill;
+                this.shortcuts = [
+                  { pattern: /^# /, format: 'header', value: 1 },
+                  { pattern: /^## /, format: 'header', value: 2 },
+                  { pattern: /^### /, format: 'header', value: 3 },
+                  { pattern: /^\* /, format: 'list', value: 'bullet' },
+                  { pattern: /^1\. /, format: 'list', value: 'ordered' },
+                  { pattern: /^> /, format: 'blockquote', value: true }
+                ];
+                this.init();
+              }
+
+              init() {
+                this.quill.on('text-change', (delta, oldDelta, source) => {
+                  if (source === 'api' || !delta.ops) return;
+
+                  for (let op of delta.ops) {
+                    if (op.insert && typeof op.insert === 'string' && op.insert.includes(' ')) {
+                      this.handleTextChange();
+                      break;
+                    }
+                  }
+                });
+              }
+
+              handleTextChange() {
+                const selection = this.quill.getSelection();
+                if (!selection) return;
+
+                const [line, offset] = this.quill.getLine(selection.index);
+                const text = line.domNode.textContent;
+
+                for (let shortcut of this.shortcuts) {
+                  const match = text.match(shortcut.pattern);
+                  if (match) {
+                    const lineStart = selection.index - offset;
+                    const matchLength = match[0].length;
+
+                    // Remove markdown syntax
+                    this.quill.deleteText(lineStart, matchLength, 'silent');
+
+                    // Apply format to entire line
+                    this.quill.formatLine(lineStart, 1, shortcut.format, shortcut.value, 'silent');
+
+                    // For lists, set cursor position after a brief delay to account for formatting
+                    if (shortcut.format === 'list') {
+                      setTimeout(() => {
+                        this.quill.setSelection(lineStart, 0, 'silent');
+                      }, 10);
+                    } else {
+                      // For headings and blockquotes, cursor stays at start
+                      this.quill.setSelection(lineStart, 0, 'silent');
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+
             // Player constants
             const apiKey = 'f2d7ae9dee829174c475e32fe8f993dc';
             const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
@@ -310,6 +376,58 @@
 
             // Socket.IO setup
             const socket = io();
+            socket.on('notes_updated', (payload) => {
+                console.log('Received real-time notes update from server.');
+                const { notes: updatedNotes, deleted_note_id, archived_note_id, archived, revision } = Array.isArray(payload) ? { notes: payload, revision: null } : payload || {};
+                if (revision && revision === lastSyncRevision) return;
+
+                // Handle different types of updates
+                if (deleted_note_id) {
+                    // Remove deleted note from local state
+                    regularNotes = regularNotes.filter(n => n.id !== deleted_note_id);
+                    archivedNotes = archivedNotes.filter(n => n.id !== deleted_note_id);
+                    notes = showArchived ? archivedNotes : regularNotes;
+                    renderNotes();
+                } else if (archived_note_id) {
+                    // Move note between archived/regular
+                    const noteToMove = showArchived ?
+                        archivedNotes.find(n => n.id === archived_note_id) :
+                        regularNotes.find(n => n.id === archived_note_id);
+                    if (noteToMove) {
+                        noteToMove.archived = archived;
+                        if (archived) {
+                            regularNotes = regularNotes.filter(n => n.id !== archived_note_id);
+                            archivedNotes.unshift(noteToMove);
+                        } else {
+                            archivedNotes = archivedNotes.filter(n => n.id !== archived_note_id);
+                            regularNotes.unshift(noteToMove);
+                        }
+                        notes = showArchived ? archivedNotes : regularNotes;
+                        renderNotes();
+                    }
+                } else if (updatedNotes && updatedNotes.length > 0) {
+                    // Handle note creation/updates
+                    updatedNotes.forEach(updatedNote => {
+                        // Update in regular notes
+                        const regularIndex = regularNotes.findIndex(n => n.id === updatedNote.id);
+                        if (regularIndex !== -1) {
+                            regularNotes[regularIndex] = updatedNote;
+                        } else {
+                            // Update in archived notes
+                            const archivedIndex = archivedNotes.findIndex(n => n.id === updatedNote.id);
+                            if (archivedIndex !== -1) {
+                                archivedNotes[archivedIndex] = updatedNote;
+                            } else {
+                                // New note - add to regular notes
+                                regularNotes.unshift(updatedNote);
+                            }
+                        }
+                    });
+                    notes = showArchived ? archivedNotes : regularNotes;
+                    renderNotes();
+                }
+            });
+
             socket.on('tldr_generated', (data) => {
                 // Update the note in our local state
                 let noteIndex = regularNotes.findIndex(n => n.id === data.note_id);
@@ -425,10 +543,38 @@
             // --- API Communication ---
             const api = {
                 getNotes: async (archived = false) => (await fetch(`/api/notes?archived=${archived}`)).json(),
-                createNote: async (title, content) => (await fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content }) })).json(),
-                updateNote: async (id, title, content, tags) => (await fetch(`/api/notes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, tags }) })).json(),
-                deleteNote: async (id) => (await fetch(`/api/notes/${id}`, { method: 'DELETE' })).json(),
-                archiveNote: async (id, archived) => (await fetch(`/api/notes/${id}/archive`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived }) })).json(),
+                createNote: async (title, content) => {
+                    lastSyncRevision = `${clientId}:${Date.now()}`;
+                    return (await fetch('/api/notes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content, revision: lastSyncRevision })
+                    })).json();
+                },
+                updateNote: async (id, title, content, tags) => {
+                    lastSyncRevision = `${clientId}:${Date.now()}`;
+                    return (await fetch(`/api/notes/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content, tags, revision: lastSyncRevision })
+                    })).json();
+                },
+                deleteNote: async (id) => {
+                    lastSyncRevision = `${clientId}:${Date.now()}`;
+                    return (await fetch(`/api/notes/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ revision: lastSyncRevision })
+                    })).json();
+                },
+                archiveNote: async (id, archived) => {
+                    lastSyncRevision = `${clientId}:${Date.now()}`;
+                    return (await fetch(`/api/notes/${id}/archive`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ archived, revision: lastSyncRevision })
+                    })).json();
+                },
                 generateTldr: async (id) => (await fetch(`/api/notes/${id}/generate-tldr`, { method: 'POST' })).json(),
             };
 
@@ -892,8 +1038,8 @@
                     </div>`;
 
                 // --- Assemble the Modal ---
-                // If NOT mobile, add the main content column. Otherwise, it's already injected in the sidebar.
-                if (!isMobile) {
+                // Always add main content for standard notes, or for desktop non-mobile
+                if (isStandard || !isMobile) {
                     mainContent.innerHTML = mainContentHTML;
                     modalContent.appendChild(mainContent);
                 }
@@ -901,14 +1047,13 @@
                 renderTags();
 
                 if (isStandard) {
-                    // Quill editor should be set up whether on mobile or desktop
-                    const editorContainer = isMobile ? sidebar : mainContent;
-                    editorContainer.innerHTML = mainContentHTML;
+                    // Quill editor setup - use mainContent for both mobile and desktop
                     currentEditor = new Quill('#wysiwyg-editor', {
                         theme: 'snow',
-                        placeholder: 'Start writing your note...',
-                        modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['blockquote', 'code-block'], ['link'], ['clean']] }
+                        modules: {}
                     });
+                    // Add markdown shortcuts
+                    new QuillMarkdownShortcuts(currentEditor);
                     const initialHtml = marked.parse(note.content || '');
                     currentEditor.root.innerHTML = initialHtml;
                     currentEditor.on('text-change', debouncedSave);
