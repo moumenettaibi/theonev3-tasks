@@ -1249,14 +1249,14 @@ def update_task(task_id):
         return jsonify({'error': 'Task not found'}), 404
 
     # Update allowed fields
-    allowed_fields = ['text', 'description', 'startDateTime', 'endDateTime', 'priority', 'tags', 'checkmarkStatus', 'group', 'date']
+    allowed_fields = ['text', 'description', 'startDateTime', 'endDateTime', 'priority', 'tags', 'checkmarkStatus', 'group', 'date', 'completedOn', 'habitTracker']
     for field in allowed_fields:
         if field in data:
             task[field] = data[field]
 
     # Save updated tasks
     write_user_tasks(tasks)
-    socketio.emit('tasks_updated', tasks, to=current_user.id)
+    socketio.emit('tasks_updated', {'tasks': tasks, 'revision': data.get('revision')}, to=current_user.id)
 
     return jsonify({'success': True, 'message': 'Task updated successfully.'})
 

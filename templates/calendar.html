@@ -286,12 +286,19 @@
         let editingGroup = null;
         let groupToDelete = null;
 
+        // Revision tagging for preventing echo overwrites
+        const clientId = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
+        let lastSyncRevision = null;
+
         // --- REAL-TIME SERVER COMMUNICATION (WebSocket) ---
         const socket = io();
         let isSyncing = false;
         let syncTimeout;
-        socket.on('tasks_updated', (updatedTasks) => {
+        socket.on('tasks_updated', (payload) => {
             console.log('Received real-time task update from server.');
+            const updatedTasks = Array.isArray(payload) ? payload : (payload?.tasks || []);
+            const revision = Array.isArray(payload) ? null : (payload?.revision || null);
+            if (revision && revision === lastSyncRevision) return; // ignore our own echo
             tasks = updatedTasks;
             renderCalendar();
         });
@@ -303,10 +310,11 @@
                 if (isSyncing) return;
                 isSyncing = true;
                 try {
+                    lastSyncRevision = `${clientId}:${Date.now()}`;
                     const response = await fetch('/api/tasks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(tasks)
+                        body: JSON.stringify({ tasks, revision: lastSyncRevision })
                     });
                     if (!response.ok) throw new Error('Sync failed');
                 } catch (error) {
@@ -337,7 +345,7 @@
 
         // --- CALENDAR STATE ---
         let currentCalendarView = 'day';
-        let currentCalendarDate = new Date(2025, 9, 14); // Tuesday, October 14, 2025
+        let currentCalendarDate = new Date(); // Start with today's date
         let currentTimeInterval;
 
         // --- CALENDAR FUNCTIONS ---
@@ -377,13 +385,23 @@
             const now = new Date();
             const hours = now.getHours();
             const minutes = now.getMinutes();
-            const totalMinutes = hours * 60 + minutes;
-            const pixelsPerMinute = 60 / 60; // 60px per hour / 60 minutes = 1px per minute
-            const topPosition = totalMinutes * pixelsPerMinute;
+            const seconds = now.getSeconds();
+
+            // Calculate precise position: each hour slot is 60px, so position within the current hour
+            const hourStartPosition = hours * 60; // Base position for the start of this hour
+            const minutePosition = (minutes / 60) * 60; // Position within the hour (60px per hour)
+            const secondPosition = (seconds / 60) * 60; // Fine adjustment for seconds
+
+            const topPosition = hourStartPosition + minutePosition + (secondPosition / 60);
 
             const indicator = document.createElement('div');
             indicator.className = 'current-time-indicator';
             indicator.style.top = `${topPosition}px`;
+
+            // Add breathing animation to the dot
+            const dot = document.createElement('div');
+            dot.className = 'current-time-dot';
+            indicator.appendChild(dot);
 
             const timeline = document.getElementById('verticalTimeline');
             if (timeline) {
@@ -445,42 +463,31 @@
                 const hour = startTime.getHours();
                 const minutes = startTime.getMinutes();
                 const top = (minutes / 60) * 100; // Position within hour slot
-        
+
+                const dateString = formatDateString(currentCalendarDate);
+                const isCompletedToday = task.completedOn[dateString] === true;
+
                 const taskElement = document.createElement('div');
-                taskElement.className = `task-event-card priority-${task.priority || 'medium'} ${task.checkmarkStatus === 'completed' ? 'completed' : ''}`;
+                taskElement.className = `task-event-card ${isCompletedToday ? 'completed' : ''}`;
                 taskElement.dataset.taskId = task.id;
                 taskElement.style.top = `${top}%`;
-                taskElement.innerHTML = `
-                    <div class="task-event-title">${task.text}</div>
-                    <div class="task-event-time">${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
-                    <div class="task-event-checkmark ${task.checkmarkStatus === 'completed' ? 'completed' : ''}" data-task-id="${task.id}"></div>
-                `;
-        
-                // Add click handler for checkmark
-                const checkmark = taskElement.querySelector('.task-event-checkmark');
-                checkmark.addEventListener('click', (e) => {
+                taskElement.style.backgroundColor = 'white';
+                taskElement.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">${startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>`;
+
+                // Add click handler for checkbox
+                const checkbox = taskElement.querySelector('.task-checkbox');
+                checkbox.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const taskId = e.target.dataset.taskId;
-                    const task = tasks.find(t => t.id === taskId);
-                    if (task) {
-                        task.checkmarkStatus = task.checkmarkStatus === 'completed' ? 'pending' : 'completed';
-                        syncTasksToServer();
-                        renderCalendar();
-                    }
+                    toggleTaskCompletion(task.id, dateString);
                 });
-        
-                // Add click and double-click handlers
+
+                // Add click handler
                 taskElement.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('task-event-checkmark')) {
+                    if (!e.target.classList.contains('task-checkbox')) {
                         openCalendarTaskModal(task.id);
                     }
                 });
-        
-                taskElement.addEventListener('dblclick', (e) => {
-                    e.preventDefault();
-                    openCalendarTaskModal(task.id);
-                });
-        
+
                 const hourContent = timeline.querySelector(`.hour-content[data-hour="${hour}"]`);
                 if (hourContent) {
                     hourContent.appendChild(taskElement);
@@ -495,39 +502,28 @@
                 const minutes = Math.floor(Math.random() * 60); // Random minute within the hour
                 const top = (minutes / 60) * 100;
         
+                const dateString = formatDateString(currentCalendarDate);
+                const isCompletedToday = task.completedOn[dateString] === true;
+
                 const taskElement = document.createElement('div');
-                taskElement.className = `task-event-card priority-${task.priority || 'medium'} ${task.checkmarkStatus === 'completed' ? 'completed' : ''}`;
+                taskElement.className = `task-event-card ${isCompletedToday ? 'completed' : ''}`;
                 taskElement.dataset.taskId = task.id;
                 taskElement.style.top = `${top}%`;
-                taskElement.innerHTML = `
-                    <div class="task-event-title">${task.text}</div>
-                    <div class="task-event-time">Unscheduled</div>
-                    <div class="task-event-checkmark ${task.checkmarkStatus === 'completed' ? 'completed' : ''}" data-task-id="${task.id}"></div>
-                `;
+                taskElement.style.backgroundColor = 'white';
+                taskElement.innerHTML = `<input type="checkbox" class="task-checkbox" ${isCompletedToday ? 'checked' : ''}><span class="task-text">${task.text}</span><div class="task-meta">Unscheduled</div>`;
         
-                // Add click handler for checkmark
-                const checkmark = taskElement.querySelector('.task-event-checkmark');
-                checkmark.addEventListener('click', (e) => {
+                // Add click handler for checkbox
+                const checkbox = taskElement.querySelector('.task-checkbox');
+                checkbox.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const taskId = e.target.dataset.taskId;
-                    const task = tasks.find(t => t.id === taskId);
-                    if (task) {
-                        task.checkmarkStatus = task.checkmarkStatus === 'completed' ? 'pending' : 'completed';
-                        syncTasksToServer();
-                        renderCalendar();
-                    }
+                    toggleTaskCompletion(task.id, formatDateString(currentCalendarDate));
                 });
         
-                // Add click and double-click handlers
+                // Add click handler
                 taskElement.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('task-event-checkmark')) {
+                    if (!e.target.classList.contains('task-checkbox')) {
                         openCalendarTaskModal(task.id);
                     }
-                });
-        
-                taskElement.addEventListener('dblclick', (e) => {
-                    e.preventDefault();
-                    openCalendarTaskModal(task.id);
                 });
         
                 const hourContent = timeline.querySelector(`.hour-content[data-hour="${hour}"]`);
@@ -1027,6 +1023,28 @@
             }
         }
 
+        function toggleTaskCompletion(taskId, dateString) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            task.completedOn[dateString] = task.completedOn[dateString] !== true;
+            if (task.habitTracker) {
+                const isCompletedNow = task.completedOn[dateString];
+                const dateIndex = task.habitTracker.completedDates.indexOf(dateString);
+                if (isCompletedNow && dateIndex === -1) {
+                    task.habitTracker.completedDates.push(dateString);
+                } else if (!isCompletedNow && dateIndex > -1) {
+                    task.habitTracker.completedDates.splice(dateIndex, 1);
+                }
+                const { completedDates, goal } = task.habitTracker;
+                if (isCompletedNow && completedDates.length === goal) {
+                    if (goal === 21) task.habitTracker.goal = 45;
+                    else if (goal === 45) task.habitTracker.goal = 90;
+                }
+            }
+            syncTasksToServer();
+            renderCalendar();
+        }
+
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
                 const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -1160,7 +1178,7 @@
             if (currentCalendarView === 'day') {
                 updateCurrentTimeIndicator();
             }
-        }, 60000); // Update every minute
+        }, 1000); // Update every second for smooth movement
 
         // --- KEYBOARD SHORTCUTS ---
         document.addEventListener('keydown', (e) => {
