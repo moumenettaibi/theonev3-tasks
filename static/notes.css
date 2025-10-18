@@ -173,6 +173,7 @@ header { text-align: center; margin-bottom: 1rem; }
     gap: 1.5rem;
     padding: 1rem; /* Add some padding */
     width: 100%;
+    position: relative;
 }
 
 .media-poster-preview {
@@ -181,6 +182,25 @@ header { text-align: center; margin-bottom: 1rem; }
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-heavy);
     object-fit: contain; /* Ensure the whole poster is visible */
+}
+
+.media-preview-container .play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 10;
 }
 
 .view-details-btn {
@@ -825,9 +845,43 @@ mark {
     font-weight: 600;
 }
 
+/* --- Player Modal Close Button --- */
+.close-player-btn {
+    display: none;
+}
+
+.player-modal.active .close-player-btn {
+    display: block;
+}
+
+/* --- Full Player Close Button --- */
+#close-full-player {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: transparent;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 10001;
+    border-radius: var(--border-radius-md);
+    transition: var(--transition-fast);
+}
+
+#close-full-player:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+#close-full-player svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+}
+
 /* ==========================================================================
-   QUILL EDITOR CUSTOM STYLES
-   ========================================================================== */
+    QUILL EDITOR CUSTOM STYLES
+    ========================================================================== */
 
 .ql-toolbar {
     display: none !important;

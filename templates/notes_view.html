@@ -747,9 +747,6 @@
                                 <div class="note-card-overlay">
                                     <h3 class="note-card-title">${highlightSearchTerm(title)}</h3>
                                     <p class="note-card-meta">${year}</p>
-                                    <div class="play-icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                    </div>
                                 </div>`;
                             break;
                         case 'Wikipedia':
@@ -942,6 +939,9 @@
                         mainContentHTML = `
                             <div class="media-preview-container">
                                 <img src="${posterUrl}" loading="lazy" class="media-poster-preview" alt="Poster">
+                                <div class="play-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                </div>
                                 ${url ? `` : ''}
                             </div>`;
                         break;
@@ -1068,7 +1068,7 @@
                     }
                 }
 
-                // Event delegation for generate TLDR button
+                // Event delegation for generate TLDR button and play icon
                 modalContent.addEventListener('click', async (e) => {
                     if (e.target.classList.contains('generate-tldr-btn')) {
                         const button = e.target;
@@ -1087,6 +1087,38 @@
                             console.error('Generate TLDR failed:', error);
                             button.disabled = false;
                             button.textContent = 'Generate AI Summary';
+                        }
+                    } else if (e.target.closest('.play-icon')) {
+                        const playIcon = e.target.closest('.play-icon');
+                        const note = notes.find(n => n.id === editingNoteId);
+                        if (note && (note.note_type === 'Movie' || note.note_type === 'TV Show')) {
+                            const mediaType = note.note_type === 'Movie' ? 'movie' : 'tv';
+                            const itemId = note.metadata.details.id;
+                            const playerUrl = `${playerBaseUrl}/${mediaType}/${itemId}`;
+                            // Create full-screen player overlay
+                            const playerOverlay = document.createElement('div');
+                            playerOverlay.id = 'full-player-overlay';
+                            playerOverlay.innerHTML = `
+                                <button id="close-full-player" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); border: none; color: white; padding: 10px; cursor: pointer; z-index: 10001;">
+                                    <svg viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"></path></svg>
+                                </button>
+                                <iframe src="${playerUrl}" allow="autoplay; fullscreen" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
+                            `;
+                            playerOverlay.style.position = 'fixed';
+                            playerOverlay.style.top = '0';
+                            playerOverlay.style.left = '0';
+                            playerOverlay.style.width = '100%';
+                            playerOverlay.style.height = '100%';
+                            playerOverlay.style.background = '#000';
+                            playerOverlay.style.zIndex = '10000';
+                            document.body.appendChild(playerOverlay);
+                            document.body.classList.add('modal-open');
+
+                            // Close button event
+                            playerOverlay.querySelector('#close-full-player').addEventListener('click', () => {
+                                playerOverlay.remove();
+                                document.body.classList.remove('modal-open');
+                            });
                         }
                     }
                 });

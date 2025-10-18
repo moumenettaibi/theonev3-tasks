@@ -1421,4 +1421,4 @@ def handle_disconnect():
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5008, allow_unsafe_werkzeug=True, use_reloader=False)
+    socketio.run(app, debug=True, port=5009, allow_unsafe_werkzeug=True, use_reloader=False)
