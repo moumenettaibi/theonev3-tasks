@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body>
+<body class="admin-dashboard">
     <div class="container">
         <header>
             <div class="header-top">
@@ -66,64 +66,102 @@
         </div>
 
         <!-- User Activity Charts -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>User Registrations (Last 30 Days)</h2>
+        <div class="charts-row">
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>User Registrations (Last 30 Days)</h2>
+                </div>
+                <canvas id="userRegistrationsChart"></canvas>
             </div>
-            <canvas id="userRegistrationsChart"></canvas>
-        </div>
 
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>Task Completions (Last 30 Days)</h2>
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>Task Completions (Last 30 Days)</h2>
+                </div>
+                <canvas id="taskCompletionsChart"></canvas>
             </div>
-            <canvas id="taskCompletionsChart"></canvas>
         </div>
 
         <!-- Top Users -->
         <div class="analytics-section">
             <h2>👥 Top Users</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="value">{{ tasks_per_user[0].username if tasks_per_user else 'N/A' }}</div>
-                    <div class="label">Most Tasks</div>
-                    <div class="sublabel">{{ tasks_per_user[0].task_count if tasks_per_user else 0 }} tasks</div>
+            <div class="charts-row">
+                <div class="chart-container small">
+                    <h3>Top 10 Users by Tasks</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 0.5rem;">Rank</th>
+                                <th style="text-align: left; padding: 0.5rem;">User</th>
+                                <th style="text-align: right; padding: 0.5rem;">Tasks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in tasks_per_user %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.5rem; font-weight: 600;">#{{ loop.index }}</td>
+                                <td style="padding: 0.5rem;">{{ user.username }}</td>
+                                <td style="text-align: right; padding: 0.5rem; font-weight: 600;">{{ user.task_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="stat-card">
-                    <div class="value">{{ notes_per_user[0].username if notes_per_user else 'N/A' }}</div>
-                    <div class="label">Most Notes</div>
-                    <div class="sublabel">{{ notes_per_user[0].note_count if notes_per_user else 0 }} notes</div>
+                <div class="chart-container small">
+                    <h3>Top 10 Users by Notes</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 0.5rem;">Rank</th>
+                                <th style="text-align: left; padding: 0.5rem;">User</th>
+                                <th style="text-align: right; padding: 0.5rem;">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in notes_per_user %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.5rem; font-weight: 600;">#{{ loop.index }}</td>
+                                <td style="padding: 0.5rem;">{{ user.username }}</td>
+                                <td style="text-align: right; padding: 0.5rem; font-weight: 600;">{{ user.note_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <!-- Content Distribution -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>Note Types Distribution</h2>
+        <div class="charts-row">
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>Note Types Distribution</h2>
+                </div>
+                <canvas id="noteTypesChart"></canvas>
             </div>
-            <canvas id="noteTypesChart"></canvas>
+
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>Task Categories</h2>
+                </div>
+                <canvas id="taskCategoriesChart"></canvas>
+            </div>
         </div>
 
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>Task Categories</h2>
+        <div class="charts-row">
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>User Engagement (Last 90 Days)</h2>
+                </div>
+                <canvas id="userEngagementChart"></canvas>
             </div>
-            <canvas id="taskCategoriesChart"></canvas>
-        </div>
 
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>User Engagement (Last 90 Days)</h2>
+            <div class="chart-container small">
+                <div class="chart-header">
+                    <h2>Task Completion Trends (Last 30 Days)</h2>
+                </div>
+                <canvas id="taskCompletionTrendsChart"></canvas>
             </div>
-            <canvas id="userEngagementChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2>Task Completion Trends (Last 30 Days)</h2>
-            </div>
-            <canvas id="taskCompletionTrendsChart"></canvas>
         </div>
         <!-- User Management Section -->
         <div class="analytics-section">
@@ -191,8 +229,8 @@
         <!-- Top Users Tables -->
         <div class="analytics-section">
             <h2>📈 Detailed Rankings</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                <div class="chart-container">
+            <div class="charts-row">
+                <div class="chart-container small">
                     <h3>Tasks per User (Top 10)</h3>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -211,7 +249,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container small">
                     <h3>Notes per User (Top 10)</h3>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -257,6 +295,14 @@
         const taskCategoriesData = JSON.parse('{{ task_categories | tojson | safe }}');
         const userEngagementData = JSON.parse('{{ user_engagement | tojson | safe }}');
         const taskCompletionTrendsData = JSON.parse('{{ task_completion_trends | tojson | safe }}');
+
+        // Debug: Log data to console
+        console.log('User Registrations Data:', userRegistrationsData);
+        console.log('Task Completions Data:', taskCompletionsData);
+        console.log('Note Types Data:', noteTypesData);
+        console.log('Task Categories Data:', taskCategoriesData);
+        console.log('User Engagement Data:', userEngagementData);
+        console.log('Task Completion Trends Data:', taskCompletionTrendsData);
 
         // User Registrations Chart
         const userRegistrationsCtx = document.getElementById('userRegistrationsChart').getContext('2d');
@@ -331,7 +377,7 @@
         // Task Categories Chart
         const taskCategoriesCtx = document.getElementById('taskCategoriesChart').getContext('2d');
         new Chart(taskCategoriesCtx, {
-            type: 'horizontalBar',
+            type: 'bar',
             data: {
                 labels: taskCategoriesData.map(d => d.group),
                 datasets: [{
@@ -585,49 +631,47 @@
             }
         }
 
-        // Search functionality - semantic search triggered by Enter key
-        document.getElementById('userSearch').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const searchTerm = e.target.value.toLowerCase().trim();
-                const tableRows = document.querySelectorAll('#usersTableBody tr');
+        // Search functionality - real-time search triggered by input
+        document.getElementById('userSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const tableRows = document.querySelectorAll('#usersTableBody tr');
 
-                if (!searchTerm) {
-                    // Show all users if search is empty
-                    tableRows.forEach(row => row.style.display = '');
-                    return;
-                }
-
-                const filteredUsers = allUsers.filter(user => {
-                    const username = user.username.toLowerCase();
-                    const email = (user.email || '').toLowerCase();
-                    const taskCount = user.task_count.toString();
-                    const noteCount = user.note_count.toString();
-                    const adminStatus = user.is_admin ? 'admin' : 'user';
-                    const oauthProvider = (user.oauth_provider || '').toLowerCase();
-
-                    // Semantic search: check multiple fields with partial matches
-                    return username.includes(searchTerm) ||
-                           email.includes(searchTerm) ||
-                           taskCount.includes(searchTerm) ||
-                           noteCount.includes(searchTerm) ||
-                           adminStatus.includes(searchTerm) ||
-                           oauthProvider.includes(searchTerm) ||
-                           // Check if search term matches parts of username (e.g., "john" matches "john.doe")
-                           username.split('.').some(part => part.includes(searchTerm)) ||
-                           // Check if search term is a number and matches task/note counts
-                           (!isNaN(searchTerm) && (user.task_count === parseInt(searchTerm) || user.note_count === parseInt(searchTerm)));
-                });
-
-                // Show/hide rows based on search results
-                tableRows.forEach((row, index) => {
-                    const user = allUsers[index];
-                    if (user && filteredUsers.includes(user)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+            if (!searchTerm) {
+                // Show all users if search is empty
+                tableRows.forEach(row => row.style.display = '');
+                return;
             }
+
+            const filteredUsers = allUsers.filter(user => {
+                const username = user.username.toLowerCase();
+                const email = (user.email || '').toLowerCase();
+                const taskCount = user.task_count.toString();
+                const noteCount = user.note_count.toString();
+                const adminStatus = user.is_admin ? 'admin' : 'user';
+                const oauthProvider = (user.oauth_provider || '').toLowerCase();
+
+                // Semantic search: check multiple fields with partial matches
+                return username.includes(searchTerm) ||
+                       email.includes(searchTerm) ||
+                       taskCount.includes(searchTerm) ||
+                       noteCount.includes(searchTerm) ||
+                       adminStatus.includes(searchTerm) ||
+                       oauthProvider.includes(searchTerm) ||
+                       // Check if search term matches parts of username (e.g., "john" matches "john.doe")
+                       username.split('.').some(part => part.includes(searchTerm)) ||
+                       // Check if search term is a number and matches task/note counts
+                       (!isNaN(searchTerm) && (user.task_count === parseInt(searchTerm) || user.note_count === parseInt(searchTerm)));
+            });
+
+            // Show/hide rows based on search results
+            tableRows.forEach((row, index) => {
+                const user = allUsers[index];
+                if (user && filteredUsers.includes(user)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
 
         // Refresh button
