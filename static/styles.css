@@ -262,14 +262,14 @@ body.admin-dashboard .chart-container.small {
 
     /* Make charts responsive on mobile */
     body.admin-dashboard canvas {
-        max-height: 250px;
+        max-height: 350px;
         width: 100% !important;
         height: auto !important;
     }
 
     /* Adjust chart containers for mobile */
     body.admin-dashboard .chart-container.small {
-        min-height: 300px;
+        min-height: 400px;
     }
 }
 
