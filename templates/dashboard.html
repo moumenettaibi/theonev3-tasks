@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAJORA - Admin Dashboard</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='favicon.png') }}" alt="Yajora Logo" class="logo">
+                    <div id="appDropdown" class="dropdown-content">
+                        <a href="/~">Yajora Tasks</a>
+                        <a href="/notes">Yajora Notes</a>
+                        <a href="/calendar">Yajora Calendar</a>
+                        <a href="/admin">Admin Dashboard</a>
+                    </div>
+                </div>
+                <h1 id="headerTitle">Admin Dashboard</h1>
+                <div class="profile-container">
+                    <button id="profileBtn" class="profile-btn">
+                        {% if profile_image %}
+                            <img src="{{ profile_image }}" alt="Profile" class="profile-img">
+                        {% else %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6 20c0-3.5 3-6 6-6s6 2.5 6 6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Overview Stats -->
+        <div class="analytics-section">
+            <h2>📊 Platform Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value">{{ total_users }}</div>
+                    <div class="label">Total Users</div>
+                    <div class="sublabel">registered accounts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ total_tasks }}</div>
+                    <div class="label">Total Tasks</div>
+                    <div class="sublabel">across all users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ total_notes }}</div>
+                    <div class="label">Total Notes</div>
+                    <div class="sublabel">across all users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ active_users }}</div>
+                    <div class="label">Active Users</div>
+                    <div class="sublabel">recent activity</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Activity Charts -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>User Registrations (Last 30 Days)</h2>
+            </div>
+            <canvas id="userRegistrationsChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Task Completions (Last 30 Days)</h2>
+            </div>
+            <canvas id="taskCompletionsChart"></canvas>
+        </div>
+
+        <!-- Top Users -->
+        <div class="analytics-section">
+            <h2>👥 Top Users</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value">{{ tasks_per_user[0].username if tasks_per_user else 'N/A' }}</div>
+                    <div class="label">Most Tasks</div>
+                    <div class="sublabel">{{ tasks_per_user[0].task_count if tasks_per_user else 0 }} tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ notes_per_user[0].username if notes_per_user else 'N/A' }}</div>
+                    <div class="label">Most Notes</div>
+                    <div class="sublabel">{{ notes_per_user[0].note_count if notes_per_user else 0 }} notes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Distribution -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Note Types Distribution</h2>
+            </div>
+            <canvas id="noteTypesChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Task Categories</h2>
+            </div>
+            <canvas id="taskCategoriesChart"></canvas>
+        </div>
+
+        <!-- Top Users Tables -->
+        <div class="analytics-section">
+            <h2>📈 Detailed Rankings</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="chart-container">
+                    <h3>Tasks per User (Top 10)</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 0.5rem;">User</th>
+                                <th style="text-align: right; padding: 0.5rem;">Tasks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in tasks_per_user %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.5rem;">{{ user.username }}</td>
+                                <td style="text-align: right; padding: 0.5rem;">{{ user.task_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="chart-container">
+                    <h3>Notes per User (Top 10)</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <th style="text-align: left; padding: 0.5rem;">User</th>
+                                <th style="text-align: right; padding: 0.5rem;">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in notes_per_user %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.5rem;">{{ user.username }}</td>
+                                <td style="text-align: right; padding: 0.5rem;">{{ user.note_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dropdown Menu Logic
+        const logo = document.querySelector('.logo');
+        const appDropdown = document.getElementById('appDropdown');
+
+        logo.addEventListener('click', (event) => {
+            event.stopPropagation();
+            appDropdown.style.display = appDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (!logo.contains(event.target) && appDropdown.style.display === 'block') {
+                appDropdown.style.display = 'none';
+            }
+        });
+
+        // Chart data from server
+        const userRegistrationsData = JSON.parse('{{ user_registrations | tojson | safe }}');
+        const taskCompletionsData = JSON.parse('{{ task_completions | tojson | safe }}');
+        const noteTypesData = JSON.parse('{{ note_types | tojson | safe }}');
+        const taskCategoriesData = JSON.parse('{{ task_categories | tojson | safe }}');
+
+        // User Registrations Chart
+        const userRegistrationsCtx = document.getElementById('userRegistrationsChart').getContext('2d');
+        new Chart(userRegistrationsCtx, {
+            type: 'line',
+            data: {
+                labels: userRegistrationsData.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'New Users',
+                    data: userRegistrationsData.map(d => d.count),
+                    borderColor: '#1a1a1a',
+                    backgroundColor: 'rgba(26, 26, 26, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Task Completions Chart
+        const taskCompletionsCtx = document.getElementById('taskCompletionsChart').getContext('2d');
+        new Chart(taskCompletionsCtx, {
+            type: 'bar',
+            data: {
+                labels: taskCompletionsData.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Task Completions',
+                    data: taskCompletionsData.map(d => d.completions),
+                    backgroundColor: '#81C784',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Note Types Chart
+        const noteTypesCtx = document.getElementById('noteTypesChart').getContext('2d');
+        new Chart(noteTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: noteTypesData.map(d => d.note_type || 'Standard'),
+                datasets: [{
+                    data: noteTypesData.map(d => d.count),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Task Categories Chart
+        const taskCategoriesCtx = document.getElementById('taskCategoriesChart').getContext('2d');
+        new Chart(taskCategoriesCtx, {
+            type: 'horizontalBar',
+            data: {
+                labels: taskCategoriesData.map(d => d.group),
+                datasets: [{
+                    label: 'Tasks',
+                    data: taskCategoriesData.map(d => d.count),
+                    backgroundColor: '#FFB74D',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    </script>
+</body>
+</html>

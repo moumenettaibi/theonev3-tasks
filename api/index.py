@@ -211,6 +211,12 @@ def run_migrations():
                 cur.execute("ALTER TABLE users ADD COLUMN oauth_id TEXT;")
                 print(" -> Added 'oauth_id' column to 'users' table.")
 
+            # Add is_admin column to users if it doesn't exist
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_admin';")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT false;")
+                print(" -> Added 'is_admin' column to 'users' table.")
+
             conn.commit()
             print("Schema check complete.")
 
@@ -223,7 +229,7 @@ login_manager.init_app(app)
 login_manager.login_view = 'login_page'
 
 class User(UserMixin):
-    def __init__(self, id, username, password_hash, email=None, profile_image=None, oauth_provider=None, oauth_id=None):
+    def __init__(self, id, username, password_hash, email=None, profile_image=None, oauth_provider=None, oauth_id=None, is_admin=False):
         self.id = id
         self.username = username
         self.password_hash = password_hash
@@ -231,6 +237,7 @@ class User(UserMixin):
         self.profile_image = profile_image
         self.oauth_provider = oauth_provider
         self.oauth_id = oauth_id
+        self.is_admin = is_admin
 
 def get_user_by_username(username):
     with get_db_connection() as conn:
@@ -238,7 +245,7 @@ def get_user_by_username(username):
             cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'), is_admin=user_data.get('is_admin', False))
     return None
 
 def get_user_by_id(user_id):
@@ -247,7 +254,7 @@ def get_user_by_id(user_id):
             cur.execute("SELECT * FROM users WHERE id = %s;", (user_id,))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'), is_admin=user_data.get('is_admin', False))
     return None
 
 def get_user_by_oauth(oauth_provider, oauth_id):
@@ -256,7 +263,7 @@ def get_user_by_oauth(oauth_provider, oauth_id):
             cur.execute("SELECT * FROM users WHERE oauth_provider = %s AND oauth_id = %s;", (oauth_provider, oauth_id))
             user_data = cur.fetchone()
     if user_data:
-        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'))
+        return User(id=user_data['id'], username=user_data['username'], password_hash=user_data['password_hash'], email=user_data.get('email'), profile_image=user_data.get('profile_image'), oauth_provider=user_data.get('oauth_provider'), oauth_id=user_data.get('oauth_id'), is_admin=user_data.get('is_admin', False))
     return None
 
 @login_manager.user_loader
@@ -365,8 +372,8 @@ def register():
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s);",
-                (new_user_id, username, hashed_password)
+                "INSERT INTO users (id, username, password_hash, is_admin) VALUES (%s, %s, %s, %s);",
+                (new_user_id, username, hashed_password, False)
             )
             
             today_str = json.dumps(date.today().isoformat())
@@ -502,8 +509,8 @@ def google_auth():
             with get_db_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "INSERT INTO users (id, username, password_hash, email, profile_image, oauth_provider, oauth_id) VALUES (%s, %s, %s, %s, %s, %s, %s);",
-                        (new_user_id, username, '', email, picture, 'google', google_id)
+                        "INSERT INTO users (id, username, password_hash, email, profile_image, oauth_provider, oauth_id, is_admin) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
+                        (new_user_id, username, '', email, picture, 'google', google_id, False)
                     )
 
                     # Add default tasks for new OAuth users
@@ -591,6 +598,110 @@ def notes_page():
 @login_required
 def archive_page():
     return render_template('notes_view.html', username=current_user.username, email=current_user.email, profile_image=current_user.profile_image, is_archive=True)
+
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        return render_template('404.html'), 404
+    # Admin analytics data
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Total users
+            cur.execute("SELECT COUNT(*) as total_users FROM users;")
+            total_users = cur.fetchone()['total_users']
+
+            # Total tasks
+            cur.execute("SELECT COUNT(*) as total_tasks FROM tasks;")
+            total_tasks = cur.fetchone()['total_tasks']
+
+            # Total notes
+            cur.execute("SELECT COUNT(*) as total_notes FROM notes;")
+            total_notes = cur.fetchone()['total_notes']
+
+            # Active users (logged in recently - assuming last login tracked, but not, so total for now)
+            active_users = total_users  # Placeholder
+
+            # Tasks per user
+            cur.execute("""
+                SELECT u.username, COUNT(t.id) as task_count
+                FROM users u
+                LEFT JOIN tasks t ON u.id = t.user_id
+                GROUP BY u.id, u.username
+                ORDER BY task_count DESC
+                LIMIT 10;
+            """)
+            tasks_per_user = cur.fetchall()
+
+            # Notes per user
+            cur.execute("""
+                SELECT u.username, COUNT(n.id) as note_count
+                FROM users u
+                LEFT JOIN notes n ON u.id = n.user_id
+                GROUP BY u.id, u.username
+                ORDER BY note_count DESC
+                LIMIT 10;
+            """)
+            notes_per_user = cur.fetchall()
+
+            # User registration over time (last 30 days)
+            cur.execute("""
+                SELECT DATE(created_at) as date, COUNT(*) as count
+                FROM users
+                WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+                GROUP BY DATE(created_at)
+                ORDER BY DATE(created_at);
+            """)
+            user_registrations = cur.fetchall()
+
+            # Task completions over time (last 30 days)
+            cur.execute("""
+                SELECT DATE(completed_on_date) as date, COUNT(*) as completions
+                FROM (
+                    SELECT jsonb_object_keys(completed_on) as completed_on_date
+                    FROM tasks
+                    WHERE completed_on != '{}'
+                ) sub
+                WHERE completed_on_date >= (CURRENT_DATE - INTERVAL '30 days')::text
+                GROUP BY DATE(completed_on_date::date)
+                ORDER BY DATE(completed_on_date::date);
+            """)
+            task_completions = cur.fetchall()
+
+            # Note types distribution
+            cur.execute("""
+                SELECT note_type, COUNT(*) as count
+                FROM notes
+                WHERE note_type IS NOT NULL
+                GROUP BY note_type;
+            """)
+            note_types = cur.fetchall()
+
+            # Task categories
+            cur.execute("""
+                SELECT "group", COUNT(*) as count
+                FROM tasks
+                WHERE "group" IS NOT NULL
+                GROUP BY "group"
+                ORDER BY count DESC
+                LIMIT 10;
+            """)
+            task_categories = cur.fetchall()
+
+    return render_template('dashboard.html',
+                          username=current_user.username,
+                          email=current_user.email,
+                          profile_image=current_user.profile_image,
+                          total_users=total_users,
+                          total_tasks=total_tasks,
+                          total_notes=total_notes,
+                          active_users=active_users,
+                          tasks_per_user=tasks_per_user,
+                          notes_per_user=notes_per_user,
+                          user_registrations=user_registrations,
+                          task_completions=task_completions,
+                          note_types=note_types,
+                          task_categories=task_categories)
 
 # --- Helper Functions for Smart Notes ---
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
@@ -1418,7 +1529,20 @@ def handle_connect():
 def handle_disconnect():
     print(f"Client {request.sid} disconnected")
 
+# --- Error Handlers ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('404.html'), 500
+
 # --- Local Development Runner ---
 if __name__ == '__main__':
     print("Starting development server with WebSocket support...")
-    socketio.run(app, debug=True, port=5009, allow_unsafe_werkzeug=True, use_reloader=False)
+    socketio.run(app, debug=True, port=5089, allow_unsafe_werkzeug=True, use_reloader=False)

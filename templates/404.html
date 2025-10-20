@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | YAJORA</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="error-page">
+            <div class="error-content">
+                <h1 class="error-code">404</h1>
+                <h2 class="error-title">Page Not Found</h2>
+                <p class="error-message">
+                    The page you're looking for doesn't exist.
+                </p>
+                <div class="error-actions">
+                    <a href="/" class="btn-primary">Go Home</a>
+                    <a href="/~" class="btn-secondary">Go to Tasks</a>
+                </div>
+            </div>
+            <div class="error-visual">
+                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" opacity="0.1" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+                    <path d="M13 7h-2v6h2V7zm0 8h-2v2h2v-2z" fill="currentColor" opacity="0.6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .error-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error-content {
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .error-title {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+
+        .error-message {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .error-actions .btn-primary,
+        .error-actions .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .error-actions .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .error-actions .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .error-actions .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .error-actions .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .error-visual {
+            opacity: 0.5;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+
+            .error-title {
+                font-size: 1.5rem;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .error-actions .btn-primary,
+            .error-actions .btn-secondary {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</body>
+</html>
