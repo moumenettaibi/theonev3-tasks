@@ -688,20 +688,80 @@ def admin_dashboard():
             """)
             task_categories = cur.fetchall()
 
+            # All users data for admin management
+            cur.execute("""
+                SELECT id, username, email, profile_image, oauth_provider, is_admin, created_at,
+                       (SELECT COUNT(*) FROM tasks WHERE user_id = u.id) as task_count,
+                       (SELECT COUNT(*) FROM notes WHERE user_id = u.id) as note_count
+                FROM users u
+                ORDER BY created_at DESC;
+            """)
+            all_users = cur.fetchall()
+
+            # Additional analytics: Daily active users (users who completed tasks in last 7 days)
+            cur.execute("""
+                SELECT COUNT(DISTINCT user_id) as daily_active_users
+                FROM (
+                    SELECT user_id, jsonb_object_keys(completed_on) as completion_date
+                    FROM tasks
+                    WHERE completed_on != '{}'
+                ) sub
+                WHERE completion_date >= (CURRENT_DATE - INTERVAL '7 days')::text;
+            """)
+            daily_active_users = cur.fetchone()['daily_active_users']
+
+            # User engagement over time (last 90 days)
+            cur.execute("""
+                SELECT DATE(d) as date, COUNT(DISTINCT activity.user_id) as active_users
+                FROM (
+                    SELECT generate_series(CURRENT_DATE - INTERVAL '90 days', CURRENT_DATE, '1 day'::interval) as d
+                ) dates
+                LEFT JOIN (
+                    SELECT DISTINCT user_id, jsonb_object_keys(completed_on)::date as activity_date
+                    FROM tasks
+                    WHERE completed_on != '{}'
+                ) activity ON activity.activity_date = dates.d
+                GROUP BY DATE(d)
+                ORDER BY DATE(d);
+            """)
+            user_engagement = cur.fetchall()
+
+            # Task completion rate trends (last 30 days)
+            cur.execute("""
+                SELECT DATE(d) as date,
+                       COUNT(DISTINCT activity.user_id) as active_users,
+                       COUNT(DISTINCT activity.task_id) as completed_tasks
+                FROM (
+                    SELECT generate_series(CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE, '1 day'::interval) as d
+                ) dates
+                LEFT JOIN (
+                    SELECT DISTINCT t.user_id, t.id as task_id, jsonb_object_keys(t.completed_on)::date as completion_date
+                    FROM tasks t
+                    WHERE t.completed_on != '{}'
+                ) activity ON activity.completion_date = dates.d
+                GROUP BY DATE(d)
+                ORDER BY DATE(d);
+            """)
+            task_completion_trends = cur.fetchall()
+
     return render_template('dashboard.html',
-                          username=current_user.username,
-                          email=current_user.email,
-                          profile_image=current_user.profile_image,
-                          total_users=total_users,
-                          total_tasks=total_tasks,
-                          total_notes=total_notes,
-                          active_users=active_users,
-                          tasks_per_user=tasks_per_user,
-                          notes_per_user=notes_per_user,
-                          user_registrations=user_registrations,
-                          task_completions=task_completions,
-                          note_types=note_types,
-                          task_categories=task_categories)
+                           username=current_user.username,
+                           email=current_user.email,
+                           profile_image=current_user.profile_image,
+                           total_users=total_users,
+                           total_tasks=total_tasks,
+                           total_notes=total_notes,
+                           active_users=active_users,
+                           tasks_per_user=tasks_per_user,
+                           notes_per_user=notes_per_user,
+                           user_registrations=user_registrations,
+                           task_completions=task_completions,
+                           note_types=note_types,
+                           task_categories=task_categories,
+                           all_users=all_users,
+                           daily_active_users=daily_active_users,
+                           user_engagement=user_engagement,
+                           task_completion_trends=task_completion_trends)
 
 # --- Helper Functions for Smart Notes ---
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', 'f2d7ae9dee829174c475e32fe8f993dc')
@@ -1496,6 +1556,146 @@ def link_google_account():
     except Exception as e:
         print(f"Google linking error: {e}")
         return jsonify({'success': False, 'message': 'Failed to link Google account.'}), 500
+
+@app.route('/admin/user/<user_id>/tasks')
+@login_required
+def admin_view_user_tasks(user_id):
+    if not current_user.is_admin:
+        return render_template('404.html'), 404
+
+    # Get user info
+    user = get_user_by_id(user_id)
+    if not user:
+        return render_template('404.html'), 404
+
+    # Get user's tasks
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT id, text, \"group\", recurrence, completed_on, habit_tracker, is_one_time, date, creation_date, description, start_datetime, end_datetime, tags, priority, checkmark_status FROM tasks WHERE user_id = %s;", (user_id,))
+            tasks = cur.fetchall()
+
+    for task in tasks:
+        task['id'] = str(task['id'])
+        task['completedOn'] = task.pop('completed_on')
+        task['habitTracker'] = task.pop('habit_tracker')
+        task['isOneTime'] = task.pop('is_one_time')
+        task['creationDate'] = task.pop('creation_date')
+        task['description'] = task.pop('description')
+        task['startDateTime'] = task.pop('start_datetime').isoformat() if task['start_datetime'] else None
+        task['endDateTime'] = task.pop('end_datetime').isoformat() if task['end_datetime'] else None
+        task['tags'] = task.pop('tags') or []
+        task['priority'] = task.pop('priority') or 'medium'
+        task['checkmarkStatus'] = task.pop('checkmark_status') or 'pending'
+        if task['date']:
+            task['date'] = task['date'].isoformat()
+
+    return render_template('index.html',
+                           username=f"{user.username}'s Tasks (Admin View)",
+                           email=user.email,
+                           profile_image=user.profile_image,
+                           initial_tasks=tasks,
+                           is_admin_view=True,
+                           admin_user_id=user_id)
+
+@app.route('/admin/user/<user_id>/notes')
+@login_required
+def admin_view_user_notes(user_id):
+    if not current_user.is_admin:
+        return render_template('404.html'), 404
+
+    # Get user info
+    user = get_user_by_id(user_id)
+    if not user:
+        return render_template('404.html'), 404
+
+    return render_template('notes_view.html',
+                           username=f"{user.username}'s Notes (Admin View)",
+                           email=user.email,
+                           profile_image=user.profile_image,
+                           is_archive=False,
+                           is_admin_view=True,
+                           admin_user_id=user_id)
+
+@app.route('/api/admin/users', methods=['GET'])
+@login_required
+def get_all_users():
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT id, username, email, profile_image, oauth_provider, is_admin, created_at,
+                       (SELECT COUNT(*) FROM tasks WHERE user_id = u.id) as task_count,
+                       (SELECT COUNT(*) FROM notes WHERE user_id = u.id) as note_count
+                FROM users u
+                ORDER BY created_at DESC;
+            """)
+            users = cur.fetchall()
+
+    for user in users:
+        user['id'] = str(user['id'])
+        user['created_at'] = user['created_at'].isoformat()
+
+    return jsonify(users)
+
+@app.route('/api/admin/users/<user_id>', methods=['PUT'])
+@login_required
+def update_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    updates = []
+    params = []
+
+    if 'username' in data:
+        updates.append("username = %s")
+        params.append(data['username'])
+
+    if 'email' in data:
+        updates.append("email = %s")
+        params.append(data['email'])
+
+    if 'is_admin' in data:
+        updates.append("is_admin = %s")
+        params.append(data['is_admin'])
+
+    if not updates:
+        return jsonify({'success': False, 'message': 'No changes provided.'}), 400
+
+    query = f"UPDATE users SET {', '.join(updates)} WHERE id = %s"
+    params.append(user_id)
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, tuple(params))
+            if cur.rowcount == 0:
+                return jsonify({'success': False, 'message': 'User not found.'}), 404
+            conn.commit()
+
+    return jsonify({'success': True, 'message': 'User updated successfully.'})
+
+@app.route('/api/admin/users/<user_id>', methods=['DELETE'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    # Prevent admin from deleting themselves
+    if user_id == str(current_user.id):
+        return jsonify({'success': False, 'message': 'Cannot delete your own account.'}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM users WHERE id = %s;", (user_id,))
+            if cur.rowcount == 0:
+                return jsonify({'success': False, 'message': 'User not found.'}), 404
+            conn.commit()
+
+    return jsonify({'success': True, 'message': 'User deleted successfully.'})
+
+
 
 @app.route('/api/profile/unlink-google', methods=['POST'])
 @login_required

@@ -112,6 +112,82 @@
             <canvas id="taskCategoriesChart"></canvas>
         </div>
 
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>User Engagement (Last 90 Days)</h2>
+            </div>
+            <canvas id="userEngagementChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Task Completion Trends (Last 30 Days)</h2>
+            </div>
+            <canvas id="taskCompletionTrendsChart"></canvas>
+        </div>
+        <!-- User Management Section -->
+        <div class="analytics-section">
+            <h2>👥 User Management</h2>
+            <div class="chart-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>All Users</h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="userSearch" placeholder="Search users by name, email, tasks, notes, admin status..." style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; min-width: 300px;">
+                        <button id="refreshUsers" style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="usersTable" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color); background: var(--background-light);">
+                                <th style="text-align: left; padding: 0.75rem; font-weight: 600;">User</th>
+                                <th style="text-align: left; padding: 0.75rem; font-weight: 600;">Email</th>
+                                <th style="text-align: center; padding: 0.75rem; font-weight: 600;">Tasks</th>
+                                <th style="text-align: center; padding: 0.75rem; font-weight: 600;">Notes</th>
+                                <th style="text-align: center; padding: 0.75rem; font-weight: 600;">Admin</th>
+                                <th style="text-align: center; padding: 0.75rem; font-weight: 600;">Joined</th>
+                                <th style="text-align: center; padding: 0.75rem; font-weight: 600;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            {% for user in all_users %}
+                            <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" data-user='{{ user | tojson | safe }}' onclick="showUserModalFromData(this)">
+                                <td style="padding: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    {% if user.profile_image %}
+                                        <img src="{{ user.profile_image }}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center;">👤</div>
+                                    {% endif %}
+                                    <div>
+                                        <div style="font-weight: 500;">{{ user.username }}</div>
+                                        {% if user.oauth_provider %}
+                                            <span title="{{ user.oauth_provider }}">{{ '🔵' if user.oauth_provider == 'google' else '🔗' }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style="padding: 0.75rem;">{{ user.email or 'N/A' }}</td>
+                                <td style="text-align: center; padding: 0.75rem;">{{ user.task_count }}</td>
+                                <td style="text-align: center; padding: 0.75rem;">{{ user.note_count }}</td>
+                                <td style="text-align: center; padding: 0.75rem;">
+                                    {% if user.is_admin %}
+                                        <span style="background: #4CAF50; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">ADMIN</span>
+                                    {% else %}
+                                        <span style="background: #9E9E9E; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">USER</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center; padding: 0.75rem;">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                                <td style="text-align: center; padding: 0.75rem;">
+                                    <button onclick="event.stopPropagation(); viewUserTasks('{{ user.id }}')" style="margin-right: 0.5rem; padding: 0.25rem 0.5rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Tasks</button>
+                                    <button onclick="event.stopPropagation(); viewUserNotes('{{ user.id }}')" style="padding: 0.25rem 0.5rem; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Notes</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Top Users Tables -->
         <div class="analytics-section">
             <h2>📈 Detailed Rankings</h2>
@@ -179,6 +255,8 @@
         const taskCompletionsData = JSON.parse('{{ task_completions | tojson | safe }}');
         const noteTypesData = JSON.parse('{{ note_types | tojson | safe }}');
         const taskCategoriesData = JSON.parse('{{ task_categories | tojson | safe }}');
+        const userEngagementData = JSON.parse('{{ user_engagement | tojson | safe }}');
+        const taskCompletionTrendsData = JSON.parse('{{ task_completion_trends | tojson | safe }}');
 
         // User Registrations Chart
         const userRegistrationsCtx = document.getElementById('userRegistrationsChart').getContext('2d');
@@ -272,6 +350,297 @@
                 plugins: { legend: { display: false } }
             }
         });
+
+        // User Engagement Chart (90 days)
+        const userEngagementCtx = document.getElementById('userEngagementChart').getContext('2d');
+        new Chart(userEngagementCtx, {
+            type: 'line',
+            data: {
+                labels: userEngagementData.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Active Users',
+                    data: userEngagementData.map(d => d.active_users),
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Task Completion Trends Chart (30 days)
+        const taskCompletionTrendsCtx = document.getElementById('taskCompletionTrendsChart').getContext('2d');
+        new Chart(taskCompletionTrendsCtx, {
+            type: 'bar',
+            data: {
+                labels: taskCompletionTrendsData.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Completed Tasks',
+                    data: taskCompletionTrendsData.map(d => d.completed_tasks),
+                    backgroundColor: '#2196F3',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // User Management Functions
+        let allUsers = [];
+
+        async function loadUsers() {
+            try {
+                console.log('Loading users...');
+                const response = await fetch('/api/admin/users');
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    allUsers = await response.json();
+                    console.log('Loaded users:', allUsers);
+                    renderUsersTable(allUsers);
+                } else {
+                    console.error('Failed to load users, status:', response.status);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid var(--border-color)';
+                row.style.cursor = 'pointer';
+                row.setAttribute('data-user', JSON.stringify(user));
+                row.onclick = () => showUserModalFromData(row);
+
+                const adminBadge = user.is_admin ?
+                    '<span style="background: #4CAF50; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">ADMIN</span>' :
+                    '<span style="background: #9E9E9E; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem;">USER</span>';
+
+                const oauthIcon = user.oauth_provider ?
+                    `<span title="${user.oauth_provider}">${user.oauth_provider === 'google' ? '🔵' : '🔗'}</span>` :
+                    '';
+
+                row.innerHTML = `
+                    <td style="padding: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        ${user.profile_image ?
+                            `<img src="${user.profile_image}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` :
+                            '<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center;">👤</div>'
+                        }
+                        <div>
+                            <div style="font-weight: 500;">${user.username}</div>
+                            ${oauthIcon}
+                        </div>
+                    </td>
+                    <td style="padding: 0.75rem;">${user.email || 'N/A'}</td>
+                    <td style="text-align: center; padding: 0.75rem;">${user.task_count}</td>
+                    <td style="text-align: center; padding: 0.75rem;">${user.note_count}</td>
+                    <td style="text-align: center; padding: 0.75rem;">${adminBadge}</td>
+                    <td style="text-align: center; padding: 0.75rem;">${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td style="text-align: center; padding: 0.75rem;">
+                        <button onclick="event.stopPropagation(); viewUserTasks('${user.id}')" style="margin-right: 0.5rem; padding: 0.25rem 0.5rem; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Tasks</button>
+                        <button onclick="event.stopPropagation(); viewUserNotes('${user.id}')" style="padding: 0.25rem 0.5rem; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Notes</button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function showUserModal(user) {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '1000';
+
+            const modalContent = document.createElement('div');
+            modalContent.style.background = 'white';
+            modalContent.style.padding = '2rem';
+            modalContent.style.borderRadius = '8px';
+            modalContent.style.maxWidth = '500px';
+            modalContent.style.width = '90%';
+            modalContent.style.maxHeight = '80vh';
+            modalContent.style.overflow = 'auto';
+
+            modalContent.innerHTML = `
+                <h3 style="margin-top: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    ${user.profile_image ?
+                        `<img src="${user.profile_image}" alt="Profile" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">` :
+                        '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">👤</div>'
+                    }
+                    ${user.username}
+                    ${user.oauth_provider ? `<span title="${user.oauth_provider}">${user.oauth_provider === 'google' ? '🔵' : '🔗'}</span>` : ''}
+                </h3>
+                <div style="margin: 1rem 0;">
+                    <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+                    <p><strong>Tasks:</strong> ${user.task_count}</p>
+                    <p><strong>Notes:</strong> ${user.note_count}</p>
+                    <p><strong>Admin:</strong> ${user.is_admin ? 'Yes' : 'No'}</p>
+                    <p><strong>Joined:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                    <button onclick="editUser('${user.id}')" style="padding: 0.5rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit User</button>
+                    <button onclick="deleteUser('${user.id}')" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete User</button>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 0.5rem 1rem; background: #9E9E9E; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            `;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+        function showUserModalFromData(rowElement) {
+            const userData = JSON.parse(rowElement.getAttribute('data-user'));
+            showUserModal(userData);
+        }
+
+        function viewUserTasks(userId) {
+            window.open(`/admin/user/${userId}/tasks`, '_blank');
+        }
+
+        function viewUserNotes(userId) {
+            window.open(`/admin/user/${userId}/notes`, '_blank');
+        }
+
+        async function editUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            const newUsername = prompt('Enter new username:', user.username);
+            const newEmail = prompt('Enter new email:', user.email || '');
+            const newIsAdmin = confirm(`Make ${newUsername} an admin? ${user.is_admin ? '(Currently admin)' : '(Currently not admin)'}`);
+
+            if (newUsername !== null) {
+                try {
+                    const response = await fetch(`/api/admin/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: newUsername,
+                            email: newEmail,
+                            is_admin: newIsAdmin
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('User updated successfully!');
+                        loadUsers();
+                    } else {
+                        const error = await response.json();
+                        alert('Error: ' + error.message);
+                    }
+                } catch (error) {
+                    alert('Error updating user: ' + error.message);
+                }
+            }
+        }
+
+        async function deleteUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            if (confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) {
+                try {
+                    const response = await fetch(`/api/admin/users/${userId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('User deleted successfully!');
+                        loadUsers();
+                    } else {
+                        const error = await response.json();
+                        alert('Error: ' + error.message);
+                    }
+                } catch (error) {
+                    alert('Error deleting user: ' + error.message);
+                }
+            }
+        }
+
+        // Search functionality - semantic search triggered by Enter key
+        document.getElementById('userSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const tableRows = document.querySelectorAll('#usersTableBody tr');
+
+                if (!searchTerm) {
+                    // Show all users if search is empty
+                    tableRows.forEach(row => row.style.display = '');
+                    return;
+                }
+
+                const filteredUsers = allUsers.filter(user => {
+                    const username = user.username.toLowerCase();
+                    const email = (user.email || '').toLowerCase();
+                    const taskCount = user.task_count.toString();
+                    const noteCount = user.note_count.toString();
+                    const adminStatus = user.is_admin ? 'admin' : 'user';
+                    const oauthProvider = (user.oauth_provider || '').toLowerCase();
+
+                    // Semantic search: check multiple fields with partial matches
+                    return username.includes(searchTerm) ||
+                           email.includes(searchTerm) ||
+                           taskCount.includes(searchTerm) ||
+                           noteCount.includes(searchTerm) ||
+                           adminStatus.includes(searchTerm) ||
+                           oauthProvider.includes(searchTerm) ||
+                           // Check if search term matches parts of username (e.g., "john" matches "john.doe")
+                           username.split('.').some(part => part.includes(searchTerm)) ||
+                           // Check if search term is a number and matches task/note counts
+                           (!isNaN(searchTerm) && (user.task_count === parseInt(searchTerm) || user.note_count === parseInt(searchTerm)));
+                });
+
+                // Show/hide rows based on search results
+                tableRows.forEach((row, index) => {
+                    const user = allUsers[index];
+                    if (user && filteredUsers.includes(user)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // Refresh button
+        document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+
+        // Initialize allUsers with server-rendered data for immediate search functionality
+        allUsers = JSON.parse('{{ all_users | tojson | safe }}');
+
+        // Load fresh users data in background for refresh functionality
+        loadUsers();
+
+        // Debug: Check if users are loaded
+        console.log('Dashboard loaded, users rendered server-side and loaded for search');
     </script>
 </body>
 </html>
